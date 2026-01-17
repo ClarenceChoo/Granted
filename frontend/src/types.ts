@@ -10,6 +10,11 @@ export interface Grant {
     sectors: Sector[];
     eligibility: string[];
     matchScore?: number; // Calculated dynamically
+    status?: string;
+    agencyIconUrl?: string;
+    applicableTo?: string[];
+    deactivationUrl?: string;
+    available?: boolean | Record<string, boolean>;
 }
 
 export interface Organization {

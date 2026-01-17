@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './App.css'
 import MainLayout from './components/layout/MainLayout'
@@ -7,12 +7,15 @@ import Discover from './pages/Discover'
 import GrantDetails from './pages/GrantDetails'
 import SignIn from './pages/SignIn'
 import { GRANTS_DATA } from './data'
-import type { Organization } from './types'
+import type { Organization, Grant } from './types'
 import { getMatchedGrants } from './utils/matching'
+import { fetchGrants } from './services/grantsService'
 
 export default function App() {
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [isSubscribed, setIsSubscribed] = useState(false)
+  const [grants, setGrants] = useState<Grant[]>(GRANTS_DATA)
+  const [isLoadingGrants, setIsLoadingGrants] = useState(true)
 
   // User State
   const [orgProfile, setOrgProfile] = useState<Organization>({
@@ -24,11 +27,24 @@ export default function App() {
 
   const isOnboardingComplete = !!(orgProfile.uen && orgProfile.mission)
 
+  // Fetch grants on component mount
+  useEffect(() => {
+    const loadGrants = async () => {
+      setIsLoadingGrants(true)
+      const fetchedGrants = await fetchGrants()
+      if (fetchedGrants.length > 0) {
+        setGrants(fetchedGrants)
+      }
+      setIsLoadingGrants(false)
+    }
+    loadGrants()
+  }, [])
+
   // Derived State: Calculate matches based on current profile
   const matchedGrants = useMemo(() => {
-    if (!isOnboardingComplete) return GRANTS_DATA.slice(0, 3).map(g => ({ ...g, matchScore: 90 }));
-    return getMatchedGrants(GRANTS_DATA, orgProfile);
-  }, [orgProfile, isOnboardingComplete])
+    if (!isOnboardingComplete) return grants.slice(0, 3).map(g => ({ ...g, matchScore: 90 }));
+    return getMatchedGrants(grants, orgProfile);
+  }, [grants, orgProfile, isOnboardingComplete])
 
   return (
     <BrowserRouter>

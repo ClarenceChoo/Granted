@@ -1,20 +1,37 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Search, Filter } from 'lucide-react'
 import { GRANTS_DATA } from '../data'
 import GrantCard from '../components/features/grants/GrantCard'
+import type { Grant } from '../types'
+import { fetchGrants } from '../services/grantsService'
 
 export default function Discover() {
     const [searchTerm, setSearchTerm] = useState('')
-    const [selectedSector, setSelectedSector] = useState<string | null>(null)
+    const [selectedAgency, setSelectedAgency] = useState<string | null>(null)
+    const [grants, setGrants] = useState<Grant[]>(GRANTS_DATA)
+    const [isLoading, setIsLoading] = useState(true)
 
-    const filteredGrants = GRANTS_DATA.filter(grant => {
+    useEffect(() => {
+        const loadGrants = async () => {
+            setIsLoading(true)
+            const fetchedGrants = await fetchGrants()
+            if (fetchedGrants.length > 0) {
+                setGrants(fetchedGrants)
+            }
+            setIsLoading(false)
+        }
+        loadGrants()
+    }, [])
+
+    const filteredGrants = grants.filter(grant => {
         const matchesSearch = grant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            grant.description.toLowerCase().includes(searchTerm.toLowerCase())
-        const matchesSector = selectedSector ? grant.sectors.includes(selectedSector as import('../types').Sector) : true
-        return matchesSearch && matchesSector
+            grant.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            grant.agency.toLowerCase().includes(searchTerm.toLowerCase())
+        const matchesAgency = selectedAgency ? grant.agency === selectedAgency : true
+        return matchesSearch && matchesAgency
     })
 
-    const allSectors = Array.from(new Set(GRANTS_DATA.flatMap(g => g.sectors)))
+    const allAgencies = Array.from(new Set(grants.map(g => g.agency))).sort()
 
     return (
         <div className="bg-slate-50 min-h-screen py-12">
@@ -31,7 +48,7 @@ export default function Discover() {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                         <input
                             type="text"
-                            placeholder="Search grants by name or keywords..."
+                            placeholder="Search grants by name, keywords, or agency..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
@@ -41,46 +58,54 @@ export default function Discover() {
                     <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0">
                         <Filter className="w-5 h-5 text-slate-400 flex-shrink-0" />
                         <button
-                            onClick={() => setSelectedSector(null)}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition ${selectedSector === null
+                            onClick={() => setSelectedAgency(null)}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition ${selectedAgency === null
                                 ? 'bg-indigo-600 text-white'
                                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                 }`}
                         >
-                            All Sectors
+                            All Agencies
                         </button>
-                        {allSectors.map(sector => (
+                        {allAgencies.map(agency => (
                             <button
-                                key={sector}
-                                onClick={() => setSelectedSector(sector)}
-                                className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition ${selectedSector === sector
+                                key={agency}
+                                onClick={() => setSelectedAgency(agency)}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition ${selectedAgency === agency
                                     ? 'bg-indigo-600 text-white'
                                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                     }`}
                             >
-                                {sector}
+                                {agency}
                             </button>
                         ))}
                     </div>
                 </div>
 
                 {/* Grid */}
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredGrants.map(grant => (
-                        <GrantCard key={grant.id} grant={grant} />
-                    ))}
-                </div>
-
-                {filteredGrants.length === 0 && (
+                {isLoading ? (
                     <div className="text-center py-20">
-                        <p className="text-slate-500 text-lg">No grants found matching your criteria.</p>
-                        <button
-                            onClick={() => { setSearchTerm(''); setSelectedSector(null) }}
-                            className="mt-4 text-indigo-600 font-medium hover:underline"
-                        >
-                            Clear filters
-                        </button>
+                        <p className="text-slate-500 text-lg">Loading grants...</p>
                     </div>
+                ) : (
+                    <>
+                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {filteredGrants.map(grant => (
+                                <GrantCard key={grant.id} grant={grant} />
+                            ))}
+                        </div>
+
+                        {filteredGrants.length === 0 && (
+                            <div className="text-center py-20">
+                                <p className="text-slate-500 text-lg">No grants found matching your criteria.</p>
+                                <button
+                                    onClick={() => { setSearchTerm(''); setSelectedAgency(null) }}
+                                    className="mt-4 text-indigo-600 font-medium hover:underline"
+                                >
+                                    Clear filters
+                                </button>
+                            </div>
+                        )}
+                    </>
                 )}
 
             </div>
