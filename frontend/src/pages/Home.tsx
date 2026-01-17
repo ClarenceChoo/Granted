@@ -2,6 +2,7 @@ import { ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import type { Grant, Organization } from '../types'
 import GrantCard from '../components/features/grants/GrantCard'
+import GrantCardSkeleton from '../components/features/grants/GrantCardSkeleton'
 
 interface HomeProps {
     matchedGrants: Grant[]
@@ -10,9 +11,10 @@ interface HomeProps {
     isSubscribed: boolean
     setIsSubscribed: (val: boolean) => void
     isComplete: boolean
+    isLoading: boolean
 }
 
-export default function Home({ matchedGrants, orgProfile, onOpenChat, isSubscribed, setIsSubscribed, isComplete }: HomeProps) {
+export default function Home({ matchedGrants, orgProfile, onOpenChat, isSubscribed, setIsSubscribed, isComplete, isLoading }: HomeProps) {
     return (
         <>
             {/* Hero Section */}
@@ -85,9 +87,20 @@ export default function Home({ matchedGrants, orgProfile, onOpenChat, isSubscrib
                     </div>
 
                     <div className="grid md:grid-cols-3 gap-8">
-                        {matchedGrants.map((grant) => (
-                            <GrantCard key={grant.id} grant={grant} />
-                        ))}
+                        {isLoading ? (
+                            // Show skeleton loaders while loading
+                            Array.from({ length: 3 }).map((_, idx) => (
+                                <GrantCardSkeleton key={idx} />
+                            ))
+                        ) : matchedGrants.length > 0 ? (
+                            matchedGrants.map((grant) => (
+                                <GrantCard key={grant.id} grant={grant} />
+                            ))
+                        ) : (
+                            <div className="col-span-3 text-center py-12">
+                                <p className="text-slate-500 text-lg">No grants available at the moment.</p>
+                            </div>
+                        )}
                     </div>
 
                     <div className="mt-12 text-center">

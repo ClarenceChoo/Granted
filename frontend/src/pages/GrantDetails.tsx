@@ -1,10 +1,33 @@
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Calendar, ExternalLink, Hash, CheckCircle } from 'lucide-react'
+import { ArrowLeft, Calendar, ExternalLink, Hash, CheckCircle, AlertCircle } from 'lucide-react'
 import { GRANTS_DATA } from '../data'
+import { useState, useEffect } from 'react'
+import { fetchGrants } from '../services/grantsService'
+import type { Grant } from '../types'
 
 export default function GrantDetails() {
     const { id } = useParams<{ id: string }>()
-    const grant = GRANTS_DATA.find(g => g.id === id)
+    const [grant, setGrant] = useState<Grant | null>(null)
+    const [isLoading, setIsLoading] = useState(true)
+
+    useEffect(() => {
+        const loadGrant = async () => {
+            setIsLoading(true)
+            const grants = await fetchGrants()
+            const foundGrant = grants.find(g => g.id === id) || GRANTS_DATA.find(g => g.id === id)
+            setGrant(foundGrant || null)
+            setIsLoading(false)
+        }
+        loadGrant()
+    }, [id])
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center p-4">
+                <h2 className="text-xl font-semibold text-slate-600">Loading grant details...</h2>
+            </div>
+        )
+    }
 
     if (!grant) {
         return (
@@ -28,15 +51,37 @@ export default function GrantDetails() {
                 {/* Header Card */}
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 mb-8">
                     <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
-                        <div>
-                            <div className="inline-block bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-4">
-                                {grant.agency}
+                        <div className="flex-grow">
+                            <div className="flex items-center gap-3 mb-4">
+                                {grant.agencyIconUrl && (
+                                    <img 
+                                        src={grant.agencyIconUrl} 
+                                        alt={grant.agency}
+                                        className="h-10 w-10 object-contain"
+                                        onError={(e) => {
+                                            e.currentTarget.style.display = 'none'
+                                        }}
+                                    />
+                                )}
+                                <div className="inline-block bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                                    {grant.agency}
+                                </div>
+                                {grant.status && (
+                                    <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${
+                                        grant.status === 'green' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
+                                        grant.status === 'red' ? 'bg-red-50 text-red-700 border-red-100' :
+                                        'bg-yellow-50 text-yellow-700 border-yellow-100'
+                                    }`}>
+                                        {grant.status === 'green' ? <CheckCircle className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
+                                        {grant.status === 'green' ? 'Active' : grant.status === 'red' ? 'Closed' : 'Limited'}
+                                    </div>
+                                )}
                             </div>
                             <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">{grant.name}</h1>
                             <div className="flex flex-wrap gap-4 text-sm text-slate-500">
                                 <div className="flex items-center gap-1">
                                     <Hash className="w-4 h-4" />
-                                    Grant ID: {grant.id}
+                                    Grant ID: {grant.id.substring(0, 12)}...
                                 </div>
                                 <div className="flex items-center gap-1">
                                     <Calendar className="w-4 h-4" />
@@ -45,10 +90,24 @@ export default function GrantDetails() {
                             </div>
                         </div>
                         <div className="flex-shrink-0">
-                            <button className="w-full md:w-auto bg-indigo-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2">
-                                Apply Now
-                                <ExternalLink className="w-4 h-4" />
-                            </button>
+                            {grant.deactivationUrl ? (
+                                <a 
+                                    href={grant.deactivationUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="w-full md:w-auto bg-indigo-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2"
+                                >
+                                    Apply Now
+                                    <ExternalLink className="w-4 h-4" />
+                                </a>
+                            ) : (
+                                <button 
+                                    disabled
+                                    className="w-full md:w-auto bg-slate-300 text-slate-500 px-6 py-3 rounded-xl font-semibold cursor-not-allowed flex items-center justify-center gap-2"
+                                >
+                                    Not Available
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -65,17 +124,38 @@ export default function GrantDetails() {
                             </p>
                         </div>
 
-                        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
-                            <h3 className="text-xl font-bold text-slate-900 mb-6">Eligibility Criteria</h3>
-                            <ul className="space-y-3">
-                                {grant.eligibility.map((item, idx) => (
-                                    <li key={idx} className="flex items-start gap-3">
-                                        <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
-                                        <span className="text-slate-700">{item}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
+                        {(grant.eligibility.length > 0 || grant.applicableTo && grant.applicableTo.length > 0) && (
+                            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+                                <h3 className="text-xl font-bold text-slate-900 mb-6">Eligibility</h3>
+                                
+                                {grant.applicableTo && grant.applicableTo.length > 0 && (
+                                    <div className="mb-6">
+                                        <h4 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Applicable To</h4>
+                                        <div className="flex flex-wrap gap-2">
+                                            {grant.applicableTo.map((type, idx) => (
+                                                <span key={idx} className="bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg text-sm font-medium border border-indigo-100">
+                                                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                {grant.eligibility.length > 0 && (
+                                    <div>
+                                        <h4 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Requirements</h4>
+                                        <ul className="space-y-3">
+                                            {grant.eligibility.map((item, idx) => (
+                                                <li key={idx} className="flex items-start gap-3">
+                                                    <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                                                    <span className="text-slate-700">{item}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {/* Sidebar */}
@@ -86,16 +166,18 @@ export default function GrantDetails() {
                             <p className="text-xs text-slate-400 mt-2">Maximum funding amount per application.</p>
                         </div>
 
-                        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                            <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4">Target Sectors</h3>
-                            <div className="flex flex-wrap gap-2">
-                                {grant.sectors.map(sector => (
-                                    <span key={sector} className="bg-slate-100 text-slate-700 px-3 py-1 rounded-lg text-sm font-medium">
-                                        {sector}
-                                    </span>
-                                ))}
+                        {grant.sectors.length > 0 && (
+                            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                                <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4">Target Sectors</h3>
+                                <div className="flex flex-wrap gap-2">
+                                    {grant.sectors.map(sector => (
+                                        <span key={sector} className="bg-slate-100 text-slate-700 px-3 py-1 rounded-lg text-sm font-medium">
+                                            {sector}
+                                        </span>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
 
                 </div>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Search, Filter } from 'lucide-react'
 import { GRANTS_DATA } from '../data'
 import GrantCard from '../components/features/grants/GrantCard'
+import GrantCardSkeleton from '../components/features/grants/GrantCardSkeleton'
 import type { Grant } from '../types'
 import { fetchGrants } from '../services/grantsService'
 
@@ -43,48 +44,71 @@ export default function Discover() {
                 </div>
 
                 {/* Search and Filter */}
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-8 flex flex-col md:flex-row gap-4">
-                    <div className="relative flex-grow">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                        <input
-                            type="text"
-                            placeholder="Search grants by name, keywords, or agency..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
-                        />
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 mb-8 overflow-hidden">
+                    {/* Search Bar */}
+                    <div className="p-4 border-b border-slate-100">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                            <input
+                                type="text"
+                                placeholder="Search grants by name, keywords, or agency..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent transition"
+                            />
+                        </div>
                     </div>
 
-                    <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0">
-                        <Filter className="w-5 h-5 text-slate-400 flex-shrink-0" />
-                        <button
-                            onClick={() => setSelectedAgency(null)}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition ${selectedAgency === null
-                                ? 'bg-indigo-600 text-white'
-                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                                }`}
-                        >
-                            All Agencies
-                        </button>
-                        {allAgencies.map(agency => (
+                    {/* Agency Filter */}
+                    <div className="p-4">
+                        <div className="flex items-center gap-3 mb-3">
+                            <Filter className="w-4 h-4 text-slate-500" />
+                            <span className="text-sm font-semibold text-slate-700 uppercase tracking-wider">Filter by Agency</span>
+                            {selectedAgency && (
+                                <button
+                                    onClick={() => setSelectedAgency(null)}
+                                    className="ml-auto text-xs text-indigo-600 hover:text-indigo-700 font-medium"
+                                >
+                                    Clear filter
+                                </button>
+                            )}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
                             <button
-                                key={agency}
-                                onClick={() => setSelectedAgency(agency)}
-                                className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition ${selectedAgency === agency
-                                    ? 'bg-indigo-600 text-white'
-                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                onClick={() => setSelectedAgency(null)}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${selectedAgency === null
+                                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30'
+                                    : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200'
                                     }`}
                             >
-                                {agency}
+                                All Agencies ({grants.length})
                             </button>
-                        ))}
+                            {allAgencies.map(agency => {
+                                const count = grants.filter(g => g.agency === agency).length
+                                return (
+                                    <button
+                                        key={agency}
+                                        onClick={() => setSelectedAgency(agency)}
+                                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 max-w-xs truncate ${selectedAgency === agency
+                                            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30'
+                                            : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200'
+                                            }`}
+                                        title={agency}
+                                    >
+                                        {agency} ({count})
+                                    </button>
+                                )
+                            })}
+                        </div>
                     </div>
                 </div>
 
                 {/* Grid */}
                 {isLoading ? (
-                    <div className="text-center py-20">
-                        <p className="text-slate-500 text-lg">Loading grants...</p>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {Array.from({ length: 9 }).map((_, idx) => (
+                            <GrantCardSkeleton key={idx} />
+                        ))}
                     </div>
                 ) : (
                     <>

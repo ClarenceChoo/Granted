@@ -14,7 +14,7 @@ import { fetchGrants } from './services/grantsService'
 export default function App() {
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [isSubscribed, setIsSubscribed] = useState(false)
-  const [grants, setGrants] = useState<Grant[]>(GRANTS_DATA)
+  const [grants, setGrants] = useState<Grant[]>([])
   const [isLoadingGrants, setIsLoadingGrants] = useState(true)
 
   // User State
@@ -34,6 +34,9 @@ export default function App() {
       const fetchedGrants = await fetchGrants()
       if (fetchedGrants.length > 0) {
         setGrants(fetchedGrants)
+      } else {
+        // Fallback to static data if API fails
+        setGrants(GRANTS_DATA)
       }
       setIsLoadingGrants(false)
     }
@@ -63,6 +66,7 @@ export default function App() {
               isSubscribed={isSubscribed}
               setIsSubscribed={setIsSubscribed}
               isComplete={isOnboardingComplete}
+              isLoading={isLoadingGrants}
             />
           } />
           <Route path="/discover" element={<Discover />} />

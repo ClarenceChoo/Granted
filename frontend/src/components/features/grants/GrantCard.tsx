@@ -36,7 +36,7 @@ export default function GrantCard({ grant }: GrantCardProps) {
     return (
         <Link 
             to={`/grant/${grant.id}`} 
-            className={`group relative bg-white rounded-2xl border border-slate-200 p-8 hover:shadow-2xl hover:shadow-slate-200/50 transition duration-300 flex flex-col h-full ${
+            className={`group relative bg-white rounded-2xl border border-slate-200 p-8 hover:shadow-2xl hover:shadow-slate-200/50 transition duration-300 flex flex-col h-full animate-fadeIn ${
                 isClosedStatus ? 'opacity-75' : 'hover:border-indigo-100'
             }`}
         >
