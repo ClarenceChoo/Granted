@@ -15,6 +15,7 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
 
     // Local state to manage the inputs before pushing up to parent
     const [localProfile, setLocalProfile] = useState<Organization>(currentProfile)
+    const [isTyping, setIsTyping] = useState(false)
 
     // Update local profile if prop changes (initial load)
     useEffect(() => {
@@ -22,12 +23,13 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
     }, [currentProfile])
 
     const handleOnboardingSubmit = (val: string) => {
+        setIsTyping(true)
         let updatedProfile = { ...localProfile }
 
         if (onboardingStep === 'uen') {
             updatedProfile = { ...updatedProfile, uen: val, name: 'My Organization' }
             setLocalProfile(updatedProfile)
-            onProfileUpdate(updatedProfile) // Optional: update immediately or wait until end
+            onProfileUpdate(updatedProfile)
             setOnboardingStep('sector')
         } else if (onboardingStep === 'sector') {
             updatedProfile = { ...updatedProfile, sector: val as Sector }
@@ -40,6 +42,10 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
             onProfileUpdate(updatedProfile)
             setOnboardingStep('complete')
         }
+
+        setTimeout(() => {
+            setIsTyping(false)
+        }, 1500)
     }
 
     return (
@@ -99,7 +105,7 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
                         )}
 
                         {/* Step 2: Sector */}
-                        {onboardingStep !== 'uen' && (
+                        {onboardingStep !== 'uen' && !(onboardingStep === 'sector' && isTyping) && (
                             <div className="flex gap-4 animate-slide-up">
                                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1E3A8A] to-[#0F766E] flex items-center justify-center flex-shrink-0 shadow-sm mt-1">
                                     <Building2 className="w-4 h-4 text-white" />
@@ -137,7 +143,7 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
                         )}
 
                         {/* Step 3: Mission */}
-                        {['mission', 'complete'].includes(onboardingStep) && (
+                        {['mission', 'complete'].includes(onboardingStep) && !(onboardingStep === 'mission' && isTyping) && (
                             <div className="flex gap-4 animate-slide-up">
                                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1E3A8A] to-[#0F766E] flex items-center justify-center flex-shrink-0 shadow-sm mt-1">
                                     <Building2 className="w-4 h-4 text-white" />
@@ -162,7 +168,7 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
                         )}
 
                         {/* Step 4: Completion */}
-                        {onboardingStep === 'complete' && (
+                        {onboardingStep === 'complete' && !isTyping && (
                             <div className="flex gap-4 animate-slide-up">
                                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1E3A8A] to-[#0F766E] flex items-center justify-center flex-shrink-0 shadow-sm mt-1">
                                     <Building2 className="w-4 h-4 text-white" />
@@ -183,6 +189,22 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
                                         >
                                             Create Account with these details
                                         </Link>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Typing Indicator */}
+                        {isTyping && (
+                            <div className="flex gap-4 animate-slide-up">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center flex-shrink-0 shadow-sm mt-1">
+                                    <Building2 className="w-4 h-4 text-white" />
+                                </div>
+                                <div className="bg-white p-4 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 text-slate-500">
+                                    <div className="flex gap-1 h-6 items-center">
+                                        <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                                        <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                                        <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
                                     </div>
                                 </div>
                             </div>
@@ -218,7 +240,7 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
                         </div>
                     </div>
                 </div>
-            </div>
+            </div >
         </>
     )
 }

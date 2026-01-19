@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useLocation, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Mail, Lock, Building2, User, ChevronRight } from 'lucide-react'
+import { ArrowLeft, Mail, Lock, Building2, User, ChevronRight, Wand2 } from 'lucide-react'
 import type { Organization } from '../types'
 
 export default function SignIn() {
@@ -23,6 +23,16 @@ export default function SignIn() {
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target
         setFormData(prev => ({ ...prev, [name]: value }))
+    }
+
+    const handleDemoFill = () => {
+        setFormData({
+            email: 'director@harmonyarts.sg',
+            password: 'password123',
+            name: 'Harmony Arts Centre',
+            uen: 'T12SS0034L',
+            sector: 'Arts & Heritage',
+        })
     }
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -88,6 +98,14 @@ export default function SignIn() {
                             </button>
                         </div>
                     </div>
+
+                    <button
+                        type="button"
+                        onClick={handleDemoFill}
+                        className="text-xs text-indigo-400 hover:text-indigo-600 mb-6 flex items-center gap-1 font-medium -mt-4 transition-colors"
+                    >
+                        <Wand2 className="w-3 h-3" /> Demo: Fill Form
+                    </button>
 
                     {prefillData && mode === 'register' && (
                         <div className="mb-6 bg-[#1E3A8A]/10 border border-[#1E3A8A]/20 text-[#1E3A8A] px-4 py-3 rounded-xl text-sm flex items-start gap-2">

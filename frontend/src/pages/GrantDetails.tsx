@@ -1,7 +1,7 @@
-import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Calendar, ExternalLink, Hash, CheckCircle, AlertCircle } from 'lucide-react'
-import { GRANTS_DATA } from '../data'
 import { useState, useEffect } from 'react'
+import { useParams, Link } from 'react-router-dom'
+import { ArrowLeft, Calendar, ExternalLink, Hash, CheckCircle, AlertCircle, X } from 'lucide-react'
+import { GRANTS_DATA } from '../data'
 import { fetchGrants } from '../services/grantsService'
 import type { Grant } from '../types'
 
@@ -9,10 +9,13 @@ export default function GrantDetails() {
     const { id } = useParams<{ id: string }>()
     const [grant, setGrant] = useState<Grant | null>(null)
     const [isLoading, setIsLoading] = useState(true)
+    const [showSuccess, setShowSuccess] = useState(false)
 
     useEffect(() => {
         const loadGrant = async () => {
             setIsLoading(true)
+            // Artificial delay for demo purposes
+            await new Promise(resolve => setTimeout(resolve, 1500))
             const grants = await fetchGrants()
             const foundGrant = grants.find(g => g.id === id) || GRANTS_DATA.find(g => g.id === id)
             setGrant(foundGrant || null)
@@ -20,6 +23,11 @@ export default function GrantDetails() {
         }
         loadGrant()
     }, [id])
+
+    const handleApply = () => {
+        setShowSuccess(true)
+        setTimeout(() => setShowSuccess(false), 3000)
+    }
 
     if (isLoading) {
         return (
@@ -54,8 +62,8 @@ export default function GrantDetails() {
                         <div className="flex-grow">
                             <div className="flex items-center gap-3 mb-4">
                                 {grant.agencyIconUrl && (
-                                    <img 
-                                        src={grant.agencyIconUrl} 
+                                    <img
+                                        src={grant.agencyIconUrl}
                                         alt={grant.agency}
                                         className="h-10 w-10 object-contain"
                                         onError={(e) => {
@@ -67,11 +75,10 @@ export default function GrantDetails() {
                                     {grant.agency}
                                 </div>
                                 {grant.status && (
-                                    <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${
-                                        grant.status === 'green' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
+                                    <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${grant.status === 'green' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
                                         grant.status === 'red' ? 'bg-red-50 text-red-700 border-red-100' :
-                                        'bg-yellow-50 text-yellow-700 border-yellow-100'
-                                    }`}>
+                                            'bg-yellow-50 text-yellow-700 border-yellow-100'
+                                        }`}>
                                         {grant.status === 'green' ? <CheckCircle className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
                                         {grant.status === 'green' ? 'Active' : grant.status === 'red' ? 'Closed' : 'Limited'}
                                     </div>
@@ -90,24 +97,13 @@ export default function GrantDetails() {
                             </div>
                         </div>
                         <div className="flex-shrink-0">
-                            {grant.deactivationUrl ? (
-                                <a 
-                                    href={grant.deactivationUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="w-full md:w-auto bg-[#0F766E] text-white px-6 py-3 rounded-xl font-semibold hover:bg-[#0d6963] transition shadow-lg shadow-[#0F766E]/20 flex items-center justify-center gap-2"
-                                >
-                                    Apply Now
-                                    <ExternalLink className="w-4 h-4" />
-                                </a>
-                            ) : (
-                                <button 
-                                    disabled
-                                    className="w-full md:w-auto bg-slate-300 text-slate-500 px-6 py-3 rounded-xl font-semibold cursor-not-allowed flex items-center justify-center gap-2"
-                                >
-                                    Not Available
-                                </button>
-                            )}
+                            <button
+                                onClick={handleApply}
+                                className="w-full md:w-auto bg-indigo-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2"
+                            >
+                                {showSuccess ? 'Applied!' : 'Apply Now'}
+                                {showSuccess ? <CheckCircle className="w-4 h-4" /> : <ExternalLink className="w-4 h-4" />}
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -124,10 +120,10 @@ export default function GrantDetails() {
                             </p>
                         </div>
 
-                        {(grant.eligibility.length > 0 || grant.applicableTo && grant.applicableTo.length > 0) && (
+                        {(grant.eligibility.length > 0 || (grant.applicableTo && grant.applicableTo.length > 0)) && (
                             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
                                 <h3 className="text-xl font-bold text-slate-900 mb-6">Eligibility</h3>
-                                
+
                                 {grant.applicableTo && grant.applicableTo.length > 0 && (
                                     <div className="mb-6">
                                         <h4 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Applicable To</h4>
@@ -140,7 +136,7 @@ export default function GrantDetails() {
                                         </div>
                                     </div>
                                 )}
-                                
+
                                 {grant.eligibility.length > 0 && (
                                     <div>
                                         <h4 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Requirements</h4>
@@ -183,6 +179,24 @@ export default function GrantDetails() {
                 </div>
 
             </div>
+
+            {/* Success Toast */}
+            {showSuccess && (
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-slide-up">
+                    <div className="bg-slate-900 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3">
+                        <div className="bg-emerald-500 rounded-full p-1">
+                            <CheckCircle className="w-4 h-4 text-white" />
+                        </div>
+                        <div>
+                            <h4 className="font-semibold text-sm">Application Submitted</h4>
+                            <p className="text-slate-400 text-xs">The agency will be in touch shortly.</p>
+                        </div>
+                        <button onClick={() => setShowSuccess(false)} className="ml-2 p-1 hover:bg-white/10 rounded-full transition">
+                            <X className="w-4 h-4 text-slate-400" />
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
