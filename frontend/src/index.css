@@ -2,17 +2,20 @@
 
 @theme {
     --font-sans: "Inter", sans-serif;
-    --color-primary: #4f46e5;
-    /* indigo-600 */
+    /* Community Compass Color Palette */
+    --color-primary: #1E3A8A; /* Deep Blue */
     --color-primary-foreground: #ffffff;
+    --color-secondary: #0F766E; /* Teal */
+    --color-accent: #F59E0B; /* Amber */
+    --color-background: #F8FAFC; /* Off-white */
+    --color-text: #0F172A; /* Slate */
+    --color-border: #E2E8F0; /* Border */
 }
 
 body {
     font-family: var(--font-sans);
-    background-color: #f8fafc;
-    /* slate-50 */
-    color: #0f172a;
-    /* slate-900 */
+    background-color: var(--color-background);
+    color: var(--color-text);
 }
 
 @keyframes blob {

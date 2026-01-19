@@ -13,7 +13,7 @@ interface MainLayoutProps {
 
 export default function MainLayout({ children, chatOpen, setChatOpen, orgProfile, setOrgProfile }: MainLayoutProps) {
     return (
-        <div className="min-h-screen bg-slate-50 relative font-sans text-slate-900 selection:bg-indigo-100 selection:text-indigo-900">
+        <div className="min-h-screen bg-[#F8FAFC] relative font-sans text-[#0F172A] selection:bg-[#1E3A8A]/10 selection:text-[#1E3A8A]">
             <Navbar />
 
             <main>
@@ -24,10 +24,10 @@ export default function MainLayout({ children, chatOpen, setChatOpen, orgProfile
             {!chatOpen && (
                 <button
                     onClick={() => setChatOpen(true)}
-                    className="fixed bottom-6 right-6 p-4 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700 hover:shadow-xl transition-all duration-300 z-40 group animate-bounce-short"
+                    className="fixed bottom-6 right-6 p-4 bg-[#0F766E] text-white rounded-full shadow-lg hover:bg-[#0d6963] hover:shadow-xl transition-all duration-300 z-40 group animate-bounce-short"
                     aria-label="Open Grant Assistant"
                 >
-                    <div className="absolute -top-2 -right-2 bg-red-500 w-4 h-4 rounded-full border-2 border-white"></div>
+                    <div className="absolute -top-2 -right-2 bg-[#F59E0B] w-4 h-4 rounded-full border-2 border-white"></div>
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 24 24"

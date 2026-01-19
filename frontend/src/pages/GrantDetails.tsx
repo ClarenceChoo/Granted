@@ -33,7 +33,7 @@ export default function GrantDetails() {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center p-4">
                 <h2 className="text-2xl font-bold text-slate-900 mb-2">Grant not found</h2>
-                <Link to="/discover" className="text-indigo-600 hover:underline">Back to Discover</Link>
+                <Link to="/discover" className="text-[#1E3A8A] hover:underline">Back to Discover</Link>
             </div>
         )
     }
@@ -43,7 +43,7 @@ export default function GrantDetails() {
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
 
                 {/* Back Link */}
-                <Link to="/discover" className="inline-flex items-center gap-2 text-slate-500 hover:text-indigo-600 mb-8 transition">
+                <Link to="/discover" className="inline-flex items-center gap-2 text-slate-500 hover:text-[#1E3A8A] mb-8 transition">
                     <ArrowLeft className="w-4 h-4" />
                     Back to Grants
                 </Link>
@@ -63,7 +63,7 @@ export default function GrantDetails() {
                                         }}
                                     />
                                 )}
-                                <div className="inline-block bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                                <div className="inline-block bg-[#1E3A8A]/10 text-[#1E3A8A] px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
                                     {grant.agency}
                                 </div>
                                 {grant.status && (
@@ -95,7 +95,7 @@ export default function GrantDetails() {
                                     href={grant.deactivationUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="w-full md:w-auto bg-indigo-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2"
+                                    className="w-full md:w-auto bg-[#0F766E] text-white px-6 py-3 rounded-xl font-semibold hover:bg-[#0d6963] transition shadow-lg shadow-[#0F766E]/20 flex items-center justify-center gap-2"
                                 >
                                     Apply Now
                                     <ExternalLink className="w-4 h-4" />
@@ -133,7 +133,7 @@ export default function GrantDetails() {
                                         <h4 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Applicable To</h4>
                                         <div className="flex flex-wrap gap-2">
                                             {grant.applicableTo.map((type, idx) => (
-                                                <span key={idx} className="bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg text-sm font-medium border border-indigo-100">
+                                                <span key={idx} className="bg-[#1E3A8A]/10 text-[#1E3A8A] px-3 py-1.5 rounded-lg text-sm font-medium border border-[#1E3A8A]/20">
                                                     {type.charAt(0).toUpperCase() + type.slice(1)}
                                                 </span>
                                             ))}
@@ -162,7 +162,7 @@ export default function GrantDetails() {
                     <div className="space-y-6">
                         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
                             <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4">Grant Quantum</h3>
-                            <p className="text-3xl font-bold text-indigo-600">{grant.quantum}</p>
+                            <p className="text-3xl font-bold text-[#0F766E]">{grant.quantum}</p>
                             <p className="text-xs text-slate-400 mt-2">Maximum funding amount per application.</p>
                         </div>
 

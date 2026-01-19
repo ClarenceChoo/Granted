@@ -54,7 +54,7 @@ export default function Discover() {
                                 placeholder="Search grants by name, keywords, or agency..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent transition"
+                                className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] focus:border-transparent transition"
                             />
                         </div>
                     </div>
@@ -67,7 +67,7 @@ export default function Discover() {
                             {selectedAgency && (
                                 <button
                                     onClick={() => setSelectedAgency(null)}
-                                    className="ml-auto text-xs text-indigo-600 hover:text-indigo-700 font-medium"
+                                    className="ml-auto text-xs text-[#1E3A8A] hover:text-[#0F766E] font-medium"
                                 >
                                     Clear filter
                                 </button>
@@ -77,7 +77,7 @@ export default function Discover() {
                             <button
                                 onClick={() => setSelectedAgency(null)}
                                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${selectedAgency === null
-                                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30'
+                                    ? 'bg-[#1E3A8A] text-white shadow-md shadow-[#1E3A8A]/30'
                                     : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200'
                                     }`}
                             >
@@ -90,7 +90,7 @@ export default function Discover() {
                                         key={agency}
                                         onClick={() => setSelectedAgency(agency)}
                                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 max-w-xs truncate ${selectedAgency === agency
-                                            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30'
+                                            ? 'bg-[#1E3A8A] text-white shadow-md shadow-[#1E3A8A]/30'
                                             : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200'
                                             }`}
                                         title={agency}
@@ -123,7 +123,7 @@ export default function Discover() {
                                 <p className="text-slate-500 text-lg">No grants found matching your criteria.</p>
                                 <button
                                     onClick={() => { setSearchTerm(''); setSelectedAgency(null) }}
-                                    className="mt-4 text-indigo-600 font-medium hover:underline"
+                                    className="mt-4 text-[#1E3A8A] font-medium hover:underline"
                                 >
                                     Clear filters
                                 </button>

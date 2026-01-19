@@ -37,7 +37,7 @@ export default function GrantCard({ grant }: GrantCardProps) {
         <Link 
             to={`/grant/${grant.id}`} 
             className={`group relative bg-white rounded-2xl border border-slate-200 p-8 hover:shadow-2xl hover:shadow-slate-200/50 transition duration-300 flex flex-col h-full animate-fadeIn ${
-                isClosedStatus ? 'opacity-75' : 'hover:border-indigo-100'
+                isClosedStatus ? 'opacity-75' : 'hover:border-[#1E3A8A]/20'
             }`}
         >
             {/* Agency Icon and Status */}
@@ -66,7 +66,7 @@ export default function GrantCard({ grant }: GrantCardProps) {
                 )}
             </div>
 
-            <h3 className="text-2xl font-bold text-slate-900 group-hover:text-indigo-600 transition-colors mb-4 line-clamp-2">
+            <h3 className="text-2xl font-bold text-slate-900 group-hover:text-[#1E3A8A] transition-colors mb-4 line-clamp-2">
                 {grant.name}
             </h3>
 
@@ -78,7 +78,7 @@ export default function GrantCard({ grant }: GrantCardProps) {
             {grant.applicableTo && grant.applicableTo.length > 0 && (
                 <div className="mb-6 flex flex-wrap gap-2">
                     {grant.applicableTo.slice(0, 2).map((type, idx) => (
-                        <span key={idx} className="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded border border-indigo-100">
+                        <span key={idx} className="text-xs bg-[#1E3A8A]/10 text-[#1E3A8A] px-2 py-1 rounded border border-[#1E3A8A]/20">
                             {type.charAt(0).toUpperCase() + type.slice(1)}
                         </span>
                     ))}

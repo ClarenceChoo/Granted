@@ -35,7 +35,7 @@ export default function SignIn() {
     return (
         <div className="min-h-screen grid md:grid-cols-2">
             {/* Left: Branding & Info */}
-            <div className="hidden md:flex bg-indigo-600 text-white p-12 flex-col justify-between relative overflow-hidden">
+            <div className="hidden md:flex bg-[#1E3A8A] text-white p-12 flex-col justify-between relative overflow-hidden">
                 <div className="relative z-10">
                     <Link to="/" className="inline-flex items-center gap-2 text-white/80 hover:text-white mb-12 transition">
                         <ArrowLeft className="w-4 h-4" /> Back to Home
@@ -43,7 +43,7 @@ export default function SignIn() {
                     <h1 className="text-4xl font-bold mb-6">
                         {mode === 'login' ? 'Welcome Back.' : 'Join Granted.'}
                     </h1>
-                    <p className="text-indigo-100 text-lg max-w-md leading-relaxed">
+                    <p className="text-blue-100 text-lg max-w-md leading-relaxed">
                         {mode === 'login'
                             ? 'Log in to access your saved grants, track applications, and get personalized funding recommendations.'
                             : 'Create an account to unlock AI-powered grant matching and streamline your non-profit funding journey.'}
@@ -51,10 +51,10 @@ export default function SignIn() {
                 </div>
 
                 {/* Abstract Shapes */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob"></div>
-                <div className="absolute bottom-0 right-0 w-80 h-80 bg-violet-600 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob animation-delay-2000"></div>
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#0F766E] rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob"></div>
+                <div className="absolute bottom-0 right-0 w-80 h-80 bg-[#F59E0B] rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
 
-                <div className="relative z-10 text-sm text-indigo-200">
+                <div className="relative z-10 text-sm text-blue-200">
                     © 2026 Granted. Empowering NPOs.
                 </div>
             </div>
@@ -64,7 +64,7 @@ export default function SignIn() {
                 <div className="max-w-md w-full mx-auto">
                     {/* Mobile Back Link */}
                     <div className="md:hidden mb-8">
-                        <Link to="/" className="inline-flex items-center gap-2 text-slate-500 hover:text-indigo-600 transition">
+                        <Link to="/" className="inline-flex items-center gap-2 text-slate-500 hover:text-[#1E3A8A] transition">
                             <ArrowLeft className="w-4 h-4" /> Back to Home
                         </Link>
                     </div>
@@ -90,11 +90,11 @@ export default function SignIn() {
                     </div>
 
                     {prefillData && mode === 'register' && (
-                        <div className="mb-6 bg-indigo-50 border border-indigo-100 text-indigo-700 px-4 py-3 rounded-xl text-sm flex items-start gap-2">
+                        <div className="mb-6 bg-[#1E3A8A]/10 border border-[#1E3A8A]/20 text-[#1E3A8A] px-4 py-3 rounded-xl text-sm flex items-start gap-2">
                             <div className="mt-0.5"><Building2 className="w-4 h-4" /></div>
                             <div>
                                 <span className="font-semibold">Details Pre-filled by AI.</span>
-                                <p className="text-indigo-600/80 mt-1 text-xs">We've populated the form with details from your chat.</p>
+                                <p className="text-[#1E3A8A]/80 mt-1 text-xs">We've populated the form with details from your chat.</p>
                             </div>
                         </div>
                     )}
@@ -111,7 +111,7 @@ export default function SignIn() {
                                             name="name"
                                             value={formData.name}
                                             onChange={handleInputChange}
-                                            className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent transition"
+                                            className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] focus:border-transparent transition"
                                             placeholder="Organization Name"
                                             required
                                         />
@@ -126,7 +126,7 @@ export default function SignIn() {
                                             name="uen"
                                             value={formData.uen}
                                             onChange={handleInputChange}
-                                            className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent transition"
+                                            className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] focus:border-transparent transition"
                                             placeholder="T08GB0021K"
                                             required
                                         />
@@ -139,7 +139,7 @@ export default function SignIn() {
                                             name="sector"
                                             value={formData.sector}
                                             onChange={handleInputChange}
-                                            className="w-full pl-3 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent transition bg-white"
+                                            className="w-full pl-3 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] focus:border-transparent transition bg-white"
                                         >
                                             {['Social Service', 'Arts & Heritage', 'Sports', 'Community', 'Education', 'Health', 'Environment', 'Other'].map(s => (
                                                 <option key={s} value={s}>{s}</option>
@@ -159,7 +159,7 @@ export default function SignIn() {
                                     name="email"
                                     value={formData.email}
                                     onChange={handleInputChange}
-                                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent transition"
+                                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] focus:border-transparent transition"
                                     placeholder="you@example.org"
                                     required
                                 />
@@ -169,7 +169,7 @@ export default function SignIn() {
                         <div>
                             <label className="block text-sm font-medium text-slate-700 mb-1">
                                 Password
-                                {mode === 'login' && <a href="#" className="float-right text-xs text-indigo-600 font-semibold hover:underline">Forgot?</a>}
+                                {mode === 'login' && <a href="#" className="float-right text-xs text-[#1E3A8A] font-semibold hover:underline">Forgot?</a>}
                             </label>
                             <div className="relative">
                                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
@@ -178,7 +178,7 @@ export default function SignIn() {
                                     name="password"
                                     value={formData.password}
                                     onChange={handleInputChange}
-                                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent transition"
+                                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] focus:border-transparent transition"
                                     placeholder="••••••••"
                                     required
                                 />
@@ -187,7 +187,7 @@ export default function SignIn() {
 
                         <button
                             type="submit"
-                            className="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2 mt-6"
+                            className="w-full bg-[#0F766E] text-white font-bold py-3 rounded-xl hover:bg-[#0d6963] transition shadow-lg shadow-[#0F766E]/20 flex items-center justify-center gap-2 mt-6"
                         >
                             {mode === 'login' ? 'Sign In' : 'Create Account'}
                             <ChevronRight className="w-4 h-4" />
@@ -198,7 +198,7 @@ export default function SignIn() {
                         {mode === 'login' ? "Don't have an account?" : "Already have an account?"}
                         <button
                             onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
-                            className="ml-1 text-indigo-600 font-semibold hover:underline"
+                            className="ml-1 text-[#1E3A8A] font-semibold hover:underline"
                         >
                             {mode === 'login' ? 'Sign Up' : 'Log In'}
                         </button>
