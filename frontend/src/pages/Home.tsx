@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import type { Grant, Organization } from '../types'
 import GrantCard from '../components/features/grants/GrantCard'
 import GrantCardSkeleton from '../components/features/grants/GrantCardSkeleton'
+import EmailTester from '../components/features/email/EmailTester'
 
 interface HomeProps {
     matchedGrants: Grant[]
@@ -85,6 +86,13 @@ export default function Home({ matchedGrants, orgProfile, onOpenChat, isSubscrib
                             </button>
                         </div>
                     </div>
+
+                    {/* Email Tester - Development Only */}
+                    {import.meta.env.DEV && (
+                        <div className="mb-12">
+                            <EmailTester orgProfile={orgProfile} />
+                        </div>
+                    )}
 
                     <div className="grid md:grid-cols-3 gap-8">
                         {isLoading ? (
