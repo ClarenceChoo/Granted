@@ -6,6 +6,8 @@ import Home from './pages/Home'
 import Discover from './pages/Discover'
 import GrantDetails from './pages/GrantDetails'
 import SignIn from './pages/SignIn'
+import MyGrants from './pages/MyGrants'
+import Resources from './pages/Resources'
 import { GRANTS_DATA } from './data'
 import type { Organization, Grant } from './types'
 import { getMatchedGrants } from './utils/matching'
@@ -71,6 +73,8 @@ export default function App() {
           } />
           <Route path="/discover" element={<Discover />} />
           <Route path="/grant/:id" element={<GrantDetails />} />
+          <Route path="/my-grants" element={<MyGrants />} />
+          <Route path="/resources" element={<Resources />} />
           <Route path="/signin" element={<SignIn />} />
         </Routes>
       </MainLayout>

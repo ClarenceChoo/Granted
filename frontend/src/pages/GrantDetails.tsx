@@ -15,7 +15,7 @@ export default function GrantDetails() {
         const loadGrant = async () => {
             setIsLoading(true)
             // Artificial delay for demo purposes
-            await new Promise(resolve => setTimeout(resolve, 1500))
+            await new Promise(resolve => setTimeout(resolve, 800))
             const grants = await fetchGrants()
             const foundGrant = grants.find(g => g.id === id) || GRANTS_DATA.find(g => g.id === id)
             setGrant(foundGrant || null)

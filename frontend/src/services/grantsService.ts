@@ -22,21 +22,18 @@ interface ApiResponse {
     grant_metadata: ApiGrantMetadata[]
 }
 
+import grantsData from '../assets/grants.json'
+
 const API_BASE_URL = '/api/v1'
 
 export async function fetchGrants(): Promise<Grant[]> {
     try {
-        const response = await fetch(`${API_BASE_URL}/grant_metadata/explore_grants`)
-        
-        if (!response.ok) {
-            throw new Error(`Failed to fetch grants: ${response.statusText}`)
-        }
-        
-        const data: ApiResponse = await response.json()
-        
+        // Use local JSON data instead of API fetch
+        const data = grantsData as unknown as ApiResponse
+
         return data.grant_metadata.map(apiGrant => transformApiGrantToGrant(apiGrant))
     } catch (error) {
-        console.error('Error fetching grants:', error)
+        console.error('Error loading grants:', error)
         return []
     }
 }

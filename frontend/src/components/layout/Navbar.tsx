@@ -14,8 +14,8 @@ export default function Navbar() {
                     </Link>
                     <div className="hidden md:flex space-x-8 text-sm font-medium text-white/80">
                         <Link to="/discover" className="hover:text-white transition-colors">Discover</Link>
-                        <button onClick={() => alert("Feature coming soon: My Saved Grants")} className="hover:text-white transition-colors bg-transparent border-none cursor-pointer">My Grants</button>
-                        <button onClick={() => alert("Feature coming soon: Knowledge Resources")} className="hover:text-white transition-colors bg-transparent border-none cursor-pointer">Resources</button>
+                        <Link to="/my-grants" className="hover:text-white transition-colors">My Grants</Link>
+                        <Link to="/resources" className="hover:text-white transition-colors">Resources</Link>
                     </div>
                     <div className="flex items-center gap-3">
                         <button className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-all">
