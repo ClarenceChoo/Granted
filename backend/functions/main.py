@@ -2,7 +2,6 @@
 # To get started, simply uncomment the below code or create your own.
 # Deploy with `firebase deploy`
 
-from firebase_functions import https_fn
 from firebase_functions.options import set_global_options
 from firebase_admin import initialize_app
 
@@ -11,11 +10,15 @@ from firebase_admin import initialize_app
 # traffic spikes by instead downgrading performance. This limit is a per-function
 # limit. You can override the limit for each function using the max_instances
 # parameter in the decorator, e.g. @https_fn.on_request(max_instances=5).
-set_global_options(max_instances=10)
+set_global_options(
+    max_instances=10,           # Max concurrent instances for cost control
+    region="asia-southeast1",   # Singapore region for low latency in SEA
+    memory=256,                 # Memory per instance (MB) - adjust based on needs
+    timeout_sec=60,             # Function timeout in seconds
+    min_instances=0,            # Scale to zero when not in use (cost-effective)
+)
 
-# initialize_app()
-#
-#
-# @https_fn.on_request()
-# def on_request_example(req: https_fn.Request) -> https_fn.Response:
-#     return https_fn.Response("Hello world!")
+initialize_app()
+
+# Import handlers
+from handlers.healthcheck import healthcheck
