@@ -71,79 +71,46 @@ async def send_grant_email(request: SendGrantEmailRequest):
         # Get top 3 grants
         top_grants = request.grants[:3]
 
-        # Build the email HTML
+        # Build the email HTML using table-based markup for compatibility
         grants_html = ""
         for index, grant in enumerate(top_grants, 1):
             match_score = grant.matchScore or 0
-            
-            # Build grant details grid
-            details_grid = ""
-            if grant.quantum:
-                details_grid += f'''<div>
-                <div style="font-size: 12px; color: #9ca3af; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">Grant Amount</div>
-                <div style="font-size: 16px; font-weight: 700; color: #059669;">{grant.quantum}</div>
-              </div>'''
-            
-            if grant.deadline:
-                details_grid += f'''<div>
-                <div style="font-size: 12px; color: #9ca3af; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">Deadline</div>
-                <div style="font-size: 16px; font-weight: 700; color: #dc2626;">{grant.deadline}</div>
-              </div>'''
-            
-            # Build sectors badges
+
             sectors_html = ""
             if grant.sectors:
                 sector_badges = "".join([
-                    f'<span style="background: #f0f9ff; color: #0369a1; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; border: 1px solid #bfdbfe;">{sector}</span>'
+                    f'<span style="display:inline-block; margin-right:6px; margin-bottom:6px; background:#eef2ff; color:#3730a3; padding:6px 10px; border-radius:6px; font-weight:600; font-size:12px;">{sector}</span>'
                     for sector in grant.sectors
                 ])
-                sectors_html = f'''<div style="margin-bottom: 16px;">
-              <div style="font-size: 12px; color: #9ca3af; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Applicable Sectors</div>
-              <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                {sector_badges}
-              </div>
-            </div>'''
-            
+                sectors_html = f'''<div style="margin-top:12px;"><div style="font-size:12px; color:#9ca3af; font-weight:600; text-transform:uppercase; margin-bottom:8px;">Applicable Sectors</div><div>{sector_badges}</div></div>'''
+
+            details_row = f""
+            if grant.quantum or grant.deadline:
+                details_row = f'''<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:collapse; margin-top:8px;"><tr><td style="font-size:12px; color:#9ca3af; font-weight:600; text-transform:uppercase; padding-bottom:6px;">{('Grant Amount' if grant.quantum else '')}</td><td style="font-size:12px; color:#9ca3af; font-weight:600; text-transform:uppercase; padding-bottom:6px; text-align:right;">{('Deadline' if grant.deadline else '')}</td></tr><tr><td style="font-size:15px; color:#059669; font-weight:700;">{grant.quantum or ''}</td><td style="font-size:15px; color:#dc2626; font-weight:700; text-align:right;">{grant.deadline or ''}</td></tr></table>'''
+
             grants_html += f'''
-        <div style="margin-bottom: 24px; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
-          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; color: white;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <div>
-                <div style="font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.9; margin-bottom: 8px;">Match #{index}</div>
-                <h3 style="margin: 0; font-size: 20px; font-weight: 700; line-height: 1.3;">{grant.name}</h3>
-              </div>
-              <div style="background: rgba(255,255,255,0.2); padding: 12px 16px; border-radius: 8px; text-align: center;">
-                <div style="font-size: 28px; font-weight: 700;">{match_score}%</div>
-                <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.9;">Match Score</div>
-              </div>
-            </div>
-          </div>
-          
-          <div style="padding: 20px;">
-            <div style="margin-bottom: 16px;">
-              <div style="font-size: 13px; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">FUNDING AGENCY</div>
-              <div style="font-size: 16px; font-weight: 600; color: #1f2937;">{grant.agency}</div>
-            </div>
-            
-            <div style="margin-bottom: 16px;">
-              <div style="font-size: 13px; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">DESCRIPTION</div>
-              <div style="font-size: 14px; color: #4b5563; line-height: 1.6;">{grant.description}</div>
-            </div>
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; border-top: 1px solid #f3f4f6; padding-top: 16px;">
-              {details_grid}
-            </div>
-            
-            {sectors_html}
-            
-            <div style="margin-top: 20px;">
-              <a href="https://granted.app/grant/{grant.id}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px;">
-                View Full Details →
-              </a>
-            </div>
-          </div>
-        </div>
-      '''
+        <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:collapse; margin-bottom:18px; border:1px solid #e5e7eb; border-radius:8px; background:#ffffff;">
+          <tr>
+            <td style="background-color:#6b46c1; color:#ffffff; padding:16px; text-align:left;">
+              <div style="font-size:12px; font-weight:600; text-transform:uppercase; margin-bottom:6px;">Match #{index}</div>
+              <div style="font-size:18px; font-weight:700;">{grant.name}</div>
+            </td>
+            <td style="background-color:#6b46c1; color:#ffffff; padding:16px; text-align:right; vertical-align:middle; width:140px;">
+              <div style="display:inline-block; background-color:rgba(255,255,255,0.12); padding:8px 12px; border-radius:6px;"><div style="font-size:22px; font-weight:700;">{match_score}%</div><div style="font-size:11px; font-weight:600; text-transform:uppercase; opacity:0.9;">Match Score</div></div>
+            </td>
+          </tr>
+          <tr>
+            <td colspan="2" style="padding:14px;">
+              <div style="font-size:12px; color:#6b7280; font-weight:600; text-transform:uppercase; margin-bottom:6px;">Funding Agency</div>
+              <div style="font-size:15px; font-weight:600; color:#111827; margin-bottom:10px;">{grant.agency}</div>
+              <div style="font-size:13px; color:#374151; line-height:1.5; margin-bottom:10px;">{grant.description}</div>
+              {details_row}
+              {sectors_html}
+              <div style="margin-top:12px;"><a href="https://granted.app/grant/{grant.id}" style="background-color:#6b46c1; color:#ffffff; padding:10px 14px; border-radius:6px; text-decoration:none; font-weight:600; display:inline-block;">View Full Details →</a></div>
+            </td>
+          </tr>
+        </table>
+        '''
 
         html = f'''<!DOCTYPE html>
     <html>
@@ -151,45 +118,40 @@ async def send_grant_email(request: SendGrantEmailRequest):
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
-          body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif; line-height: 1.5; color: #1f2937; }}
-          a {{ color: #667eea; text-decoration: none; }}
-          a:hover {{ text-decoration: underline; }}
+          body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; margin:0; padding:0; }}
+          a {{ color: #6b46c1; text-decoration:none; }}
         </style>
       </head>
-      <body style="margin: 0; padding: 0; background: #f9fafb;">
-        <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
-          
-          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 24px; text-align: center; color: white;">
-            <div style="font-size: 32px; font-weight: 700; margin-bottom: 8px;">✨ Your Grant Matches</div>
-            <div style="font-size: 16px; opacity: 0.95;">Personalized recommendations for {request.organization.name}</div>
-          </div>
-          
-          <div style="padding: 40px 24px;">
-            
-            <div style="margin-bottom: 32px;">
-              <p style="font-size: 16px; color: #4b5563; margin: 0 0 12px 0;">Hi,</p>
-              <p style="font-size: 15px; color: #6b7280; line-height: 1.6; margin: 0;">We've analyzed our grant database and found the top 3 grants that match your organization's profile. These opportunities align with your sector (<strong>{request.organization.sector}</strong>) and mission focus.</p>
-            </div>
-            
-            <div>{grants_html}</div>
-            
-            <div style="background: #f0f9ff; border-left: 4px solid #0369a1; padding: 16px; border-radius: 8px; margin-top: 32px;">
-              <div style="font-weight: 600; color: #0369a1; margin-bottom: 8px;">Why These Matches?</div>
-              <div style="font-size: 14px; color: #0c4a6e; line-height: 1.6;">
-                Our matching algorithm analyzes sector alignment, mission keywords, and grant requirements to find the best opportunities for your organization. Higher match scores indicate better alignment with your profile.
-              </div>
-            </div>
-            
-          </div>
-          
-          <div style="background: #f9fafb; padding: 24px; border-top: 1px solid #e5e7eb; text-align: center;">
-            <p style="font-size: 13px; color: #9ca3af; margin: 0 0 12px 0;">Questions about these grants? Visit our platform for more details.</p>
-            <p style="font-size: 12px; color: #d1d5db; margin: 0;">
-              Granted • Making Grant Discovery Simple
-            </p>
-          </div>
-          
-        </div>
+      <body style="margin:0; padding:0; background-color:#f3f4f6;">
+        <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse: collapse;">
+          <tr>
+            <td align="center" style="padding:20px 10px;">
+              <table width="600" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:collapse; background:#ffffff; border-radius:8px; overflow:hidden;">
+                <tr>
+                  <td style="background-color:#6b46c1; color:#ffffff; text-align:center; padding:28px 18px;">
+                    <div style="font-size:22px; font-weight:700;">✨ Your Grant Matches</div>
+                    <div style="font-size:14px; opacity:0.95; margin-top:6px;">Personalized recommendations for {request.organization.name}</div>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:20px;">
+                    <p style="margin:0 0 10px 0; font-size:15px; color:#374151;">Hi,</p>
+                    <p style="margin:0 0 16px 0; font-size:14px; color:#6b7280; line-height:1.5;">We've analyzed our grant database and found the top 3 grants that match your organization's profile. These opportunities align with your sector (<strong>{request.organization.sector}</strong>) and mission focus.</p>
+                    {grants_html}
+                    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:collapse; margin-top:12px; background:#f0f9ff; border-left:4px solid #0369a1; border-radius:6px;">
+                      <tr>
+                        <td style="padding:12px 14px;"><div style="font-weight:600; color:#0369a1; margin-bottom:8px;">Why These Matches?</div><div style="font-size:13px; color:#0c4a6e; line-height:1.5;">Our matching algorithm analyzes sector alignment, mission keywords, and grant requirements to find the best opportunities for your organization. Higher match scores indicate better alignment with your profile.</div></td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="background:#f9fafb; padding:16px; text-align:center; border-top:1px solid #e5e7eb; font-size:13px; color:#9ca3af;">Questions about these grants? Visit our platform for more details.<br /><span style="color:#c6c6c6; font-size:12px;">Granted • Making Grant Discovery Simple</span></td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
       </body>
     </html>'''
 
