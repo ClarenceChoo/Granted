@@ -9,12 +9,16 @@ interface MainLayoutProps {
     setChatOpen: (isOpen: boolean) => void
     orgProfile: Organization
     setOrgProfile: (profile: Organization) => void
+    isAuthenticated?: boolean
+    setIsAuthenticated?: (b: boolean) => void
+    user?: { name?: string; email?: string } | null
+    setUser?: (u: any) => void
 }
 
-export default function MainLayout({ children, chatOpen, setChatOpen, orgProfile, setOrgProfile }: MainLayoutProps) {
+export default function MainLayout({ children, chatOpen, setChatOpen, orgProfile, setOrgProfile, isAuthenticated, setIsAuthenticated, user, setUser }: MainLayoutProps) {
     return (
         <div className="min-h-screen bg-[#F8FAFC] relative font-sans text-[#0F172A] selection:bg-[#1E3A8A]/10 selection:text-[#1E3A8A]">
-            <Navbar />
+            <Navbar isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated} user={user} setUser={setUser} />
 
             <main>
                 {children}
@@ -49,6 +53,7 @@ export default function MainLayout({ children, chatOpen, setChatOpen, orgProfile
             <GrantAssistant
                 isOpen={chatOpen}
                 onClose={() => setChatOpen(false)}
+                setChatOpen={setChatOpen}
                 currentProfile={orgProfile}
                 onProfileUpdate={setOrgProfile}
             />

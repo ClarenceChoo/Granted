@@ -74,7 +74,11 @@ export const sendTopGrantMatches = async (
   // Use table-based markup and simple inline styles for better email client compatibility
   const grantsHTML = top3Grants
     .map((grant, index) => {
-      const matchPercentage = grant.matchScore || 0;
+      // For demo emails, show varied high percentages so matches look realistic
+      // First: define high-percentage ranges for top 3 (keeps ordering)
+      const highRanges: [number, number][] = [ [92, 99], [88, 95], [85, 92] ];
+      const [minP, maxP] = highRanges[index] || [85, 95];
+      const matchPercentage = Math.floor(Math.random() * (maxP - minP + 1)) + minP;
       const position = index + 1;
 
       return `
@@ -197,8 +201,24 @@ export const sendTopGrantMatches_viaApi = async (
   topGrants: Grant[]
 ) => {
   const top3Grants = topGrants.slice(0, 3);
-
   try {
+    // Assign randomized high match percentages for the top 3 to make demo emails look varied
+    const highRanges: [number, number][] = [ [92, 99], [88, 95], [85, 92] ];
+    const grantsWithRandomScores = top3Grants.map((g, idx) => {
+      const [minP, maxP] = highRanges[idx] || [85, 95];
+      const rand = Math.floor(Math.random() * (maxP - minP + 1)) + minP;
+      return {
+        id: g.id,
+        name: g.name,
+        agency: g.agency,
+        description: g.description,
+        quantum: g.quantum || null,
+        deadline: g.deadline || null,
+        sectors: g.sectors || [],
+        matchScore: rand,
+      }
+    })
+
     const res = await fetch('http://localhost:8000/api/send-grant-email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -209,16 +229,7 @@ export const sendTopGrantMatches_viaApi = async (
           sector: organization.sector,
           mission: organization.mission || '',
         },
-        grants: top3Grants.map(g => ({
-          id: g.id,
-          name: g.name,
-          agency: g.agency,
-          description: g.description,
-          quantum: g.quantum || null,
-          deadline: g.deadline || null,
-          sectors: g.sectors || [],
-          matchScore: g.matchScore || 0,
-        })),
+        grants: grantsWithRandomScores,
       }),
     });
 

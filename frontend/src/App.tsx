@@ -8,6 +8,7 @@ import GrantDetails from './pages/GrantDetails'
 import SignIn from './pages/SignIn'
 import MyGrants from './pages/MyGrants'
 import Resources from './pages/Resources'
+import AdminDashboard from './pages/AdminDashboard'
 import { GRANTS_DATA } from './data'
 import type { Organization, Grant } from './types'
 import { getMatchedGrants } from './utils/matching'
@@ -18,6 +19,10 @@ export default function App() {
   const [isSubscribed, setIsSubscribed] = useState(false)
   const [grants, setGrants] = useState<Grant[]>([])
   const [isLoadingGrants, setIsLoadingGrants] = useState(true)
+
+  // Simulated auth state for demo
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [user, setUser] = useState<{ name?: string; email?: string } | null>(null)
 
   // User State
   const [orgProfile, setOrgProfile] = useState<Organization>({
@@ -58,6 +63,10 @@ export default function App() {
         setChatOpen={setIsChatOpen}
         orgProfile={orgProfile}
         setOrgProfile={setOrgProfile}
+        isAuthenticated={isAuthenticated}
+        setIsAuthenticated={setIsAuthenticated}
+        user={user}
+        setUser={setUser}
       >
         <Routes>
           <Route path="/" element={
@@ -75,7 +84,11 @@ export default function App() {
           <Route path="/grant/:id" element={<GrantDetails />} />
           <Route path="/my-grants" element={<MyGrants />} />
           <Route path="/resources" element={<Resources />} />
-          <Route path="/signin" element={<SignIn />} />
+          <Route path="/admin" element={<AdminDashboard setOrgProfile={setOrgProfile} />} />
+          <Route
+            path="/signin"
+            element={<SignIn onAuthSuccess={(profile: any) => { setIsAuthenticated(true); setUser(profile); }} />}
+          />
         </Routes>
       </MainLayout>
     </BrowserRouter>

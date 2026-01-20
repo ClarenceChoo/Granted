@@ -3,7 +3,7 @@ import { useLocation, Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Mail, Lock, Building2, User, ChevronRight, Wand2 } from 'lucide-react'
 import type { Organization } from '../types'
 
-export default function SignIn() {
+export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: any) => void }) {
     const location = useLocation()
     const navigate = useNavigate()
 
@@ -37,7 +37,16 @@ export default function SignIn() {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
-        // Mock authentication
+        // Mock authentication: notify parent and navigate home
+        const profile = {
+            email: formData.email,
+            name: formData.name,
+            uen: formData.uen,
+            sector: formData.sector,
+            mission: formData.mission || '',
+        }
+
+        onAuthSuccess?.(profile)
         alert(`Successfully ${mode === 'login' ? 'Logged In' : 'Registered'}!`)
         navigate('/')
     }
@@ -221,6 +230,10 @@ export default function SignIn() {
                             {mode === 'login' ? 'Sign Up' : 'Log In'}
                         </button>
                     </p>
+
+                    <div className="text-center mt-6">
+                        <button onClick={() => navigate('/admin')} className="text-sm text-[#1E3A8A] font-semibold hover:underline">Go to Admin Dashboard (Demo)</button>
+                    </div>
                 </div>
             </div>
         </div>
