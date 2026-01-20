@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { MessageCircle, X, Building2, ArrowRight } from 'lucide-react'
 import type { Organization, Sector } from '../../../types'
@@ -16,6 +16,18 @@ type Step = 'uen' | 'sector' | 'mission' | 'ai_mission' | 'beneficiaries' | 'bud
 export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, currentProfile }: GrantAssistantProps) {
     const navigate = useNavigate()
     const [onboardingStep, setOnboardingStep] = useState<Step>('uen')
+
+    const steps = ['uen', 'sector', 'mission', 'ai_mission', 'beneficiaries', 'budget', 'complete']
+    const isStepActiveOrPast = (targetStep: Step) => {
+        const currentIndex = steps.indexOf(onboardingStep)
+        const targetIndex = steps.indexOf(targetStep)
+        return currentIndex >= targetIndex
+    }
+    const isStepPast = (targetStep: Step) => {
+        const currentIndex = steps.indexOf(onboardingStep)
+        const targetIndex = steps.indexOf(targetStep)
+        return currentIndex > targetIndex
+    }
 
     // Local state to manage the inputs before pushing up to parent
     const [localProfile, setLocalProfile] = useState<Organization>(currentProfile)
@@ -40,8 +52,8 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
         if (!isOpen && onboardingStep !== 'complete') {
             console.debug('GrantAssistant: was closed during onboarding — reopening')
             // try to reopen the chat via parent setter if available
-            if (typeof (arguments as any) !== 'undefined') {}
-            if (typeof ({} as any) !== 'undefined') {}
+            if (typeof (arguments as any) !== 'undefined') { }
+            if (typeof ({} as any) !== 'undefined') { }
             if (typeof (setChatOpen) === 'function') {
                 // small delay to allow whatever triggered the close to settle
                 setTimeout(() => setChatOpen(true), 50)
@@ -131,6 +143,16 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
         }, 900)
     }
 
+    // Auto-scroll to bottom
+    const messagesEndRef = useRef<HTMLDivElement>(null)
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
+
+    useEffect(() => {
+        scrollToBottom()
+    }, [onboardingStep, isTyping, beneficiariesLocal, budgetLocal])
+
     return (
         <>
             {/* Overlay */}
@@ -176,7 +198,7 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
                         </div>
 
                         {/* Answer 1 */}
-                        {onboardingStep !== 'uen' && (
+                        {isStepPast('uen') && (
                             <div className="flex gap-4 flex-row-reverse animate-slide-up">
                                 <div className="space-y-2 max-w-[85%]">
                                     <div className="bg-[#0F766E] p-4 rounded-2xl rounded-tr-none shadow-sm text-white leading-relaxed">
@@ -187,7 +209,7 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
                         )}
 
                         {/* Step 2: Sector */}
-                        {onboardingStep !== 'uen' && (
+                        {isStepActiveOrPast('sector') && (
                             <div className="flex gap-4 animate-slide-up">
                                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1E3A8A] to-[#0F766E] flex items-center justify-center flex-shrink-0 shadow-sm mt-1">
                                     <Building2 className="w-4 h-4 text-white" />
@@ -214,7 +236,7 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
                         )}
 
                         {/* Answer 2 */}
-                        {['mission', 'complete'].includes(onboardingStep) && (
+                        {isStepPast('sector') && (
                             <div className="flex gap-4 flex-row-reverse animate-slide-up">
                                 <div className="space-y-2 max-w-[85%]">
                                     <div className="bg-[#0F766E] p-4 rounded-2xl rounded-tr-none shadow-sm text-white leading-relaxed">
@@ -225,7 +247,7 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
                         )}
 
                         {/* Step 3: Mission */}
-                        {onboardingStep === 'mission' && (
+                        {isStepActiveOrPast('mission') && (
                             <div className="flex gap-4 animate-slide-up">
                                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1E3A8A] to-[#0F766E] flex items-center justify-center flex-shrink-0 shadow-sm mt-1">
                                     <Building2 className="w-4 h-4 text-white" />
@@ -239,7 +261,7 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
                         )}
 
                         {/* Show mission answer once provided */}
-                        {['beneficiaries','budget','complete'].includes(onboardingStep) && (
+                        {isStepPast('mission') && (
                             <div className="flex gap-4 flex-row-reverse animate-slide-up">
                                 <div className="space-y-2 max-w-[85%]">
                                     <div className="bg-[#0F766E] p-4 rounded-2xl rounded-tr-none shadow-sm text-white leading-relaxed">
@@ -250,7 +272,7 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
                         )}
 
                         {/* AI-refined mission suggestion */}
-                        {onboardingStep === 'ai_mission' && (
+                        {isStepActiveOrPast('ai_mission') && (
                             <div className="flex gap-4 animate-slide-up">
                                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1E3A8A] to-[#0F766E] flex items-center justify-center flex-shrink-0 shadow-sm mt-1">
                                     <Building2 className="w-4 h-4 text-white" />
@@ -289,7 +311,7 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
                         )}
 
                         {/* Beneficiaries prompt */}
-                        {onboardingStep === 'beneficiaries' && (
+                        {isStepActiveOrPast('beneficiaries') && (
                             <div className="flex gap-4 animate-slide-up">
                                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1E3A8A] to-[#0F766E] flex items-center justify-center flex-shrink-0 shadow-sm mt-1">
                                     <Building2 className="w-4 h-4 text-white" />
@@ -303,7 +325,7 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
                         )}
 
                         {/* Show beneficiaries answer once provided */}
-                        {['budget','complete'].includes(onboardingStep) && (
+                        {isStepPast('beneficiaries') && (
                             <div className="flex gap-4 flex-row-reverse animate-slide-up">
                                 <div className="space-y-2 max-w-[85%]">
                                     <div className="bg-[#0F766E] p-4 rounded-2xl rounded-tr-none shadow-sm text-white leading-relaxed">
@@ -314,7 +336,7 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
                         )}
 
                         {/* Budget prompt */}
-                        {onboardingStep === 'budget' && (
+                        {isStepActiveOrPast('budget') && (
                             <div className="flex gap-4 animate-slide-up">
                                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1E3A8A] to-[#0F766E] flex items-center justify-center flex-shrink-0 shadow-sm mt-1">
                                     <Building2 className="w-4 h-4 text-white" />
@@ -322,6 +344,17 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
                                 <div className="space-y-2 max-w-[85%]">
                                     <div className="bg-white p-4 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 text-slate-700 leading-relaxed">
                                         <p>Finally, what's your typical annual budget (approx)?</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Show budget answer once provided */}
+                        {isStepPast('budget') && (
+                            <div className="flex gap-4 flex-row-reverse animate-slide-up">
+                                <div className="space-y-2 max-w-[85%]">
+                                    <div className="bg-[#0F766E] p-4 rounded-2xl rounded-tr-none shadow-sm text-white leading-relaxed">
+                                        <p>{budgetLocal}</p>
                                     </div>
                                 </div>
                             </div>
@@ -369,6 +402,7 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
                                 </div>
                             </div>
                         )}
+                        <div ref={messagesEndRef} />
                     </div>
 
                     {/* Input Area */}
@@ -378,9 +412,9 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
                                 type="text"
                                 placeholder={
                                     onboardingStep === 'uen' ? "Enter UEN (e.g., T08GB0021K)" :
-                                    onboardingStep === 'ai_mission' ? 'AI-suggested mission (editable)' :
-                                    onboardingStep === 'beneficiaries' ? 'Primary beneficiaries (comma separated)' :
-                                    onboardingStep === 'budget' ? 'Annual budget (e.g., <$100k)' : 'Type your message...'
+                                        onboardingStep === 'ai_mission' ? 'AI-suggested mission (editable)' :
+                                            onboardingStep === 'beneficiaries' ? 'Primary beneficiaries (comma separated)' :
+                                                onboardingStep === 'budget' ? 'Annual budget (e.g., <$100k)' : 'Type your message...'
                                 }
                                 disabled={onboardingStep === 'complete' || onboardingStep === 'sector'}
                                 onKeyDown={(e) => {
