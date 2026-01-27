@@ -6,6 +6,7 @@ import json
 import logging
 from firebase_functions import https_fn
 from firebase_admin import firestore, auth
+from google.cloud.firestore import SERVER_TIMESTAMP
 
 from .utils import get_cors_headers
 
@@ -166,7 +167,7 @@ def update_npo(req: https_fn.Request) -> https_fn.Response:
             )
         
         # Add updated_at timestamp
-        update_data["updated_at"] = firestore.SERVER_TIMESTAMP
+        update_data["updated_at"] = SERVER_TIMESTAMP
         
         # Update Firestore document
         npo_ref.update(update_data)
