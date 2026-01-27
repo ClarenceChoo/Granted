@@ -4,6 +4,7 @@ HTTP function for NPO login authentication.
 
 import json
 import logging
+import os
 import requests
 from firebase_functions import https_fn
 
@@ -14,11 +15,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-# Firebase Web API Key (from Firebase Console > Project Settings)
-FIREBASE_API_KEY = "AIzaSyCxBVpcd4mOOz1Z7KEqaFW5RG0J8QfC-cU"
 
-
-@https_fn.on_request()
+@https_fn.on_request(secrets=["WEB_API_KEY"])
 def login_npo(req: https_fn.Request) -> https_fn.Response:
     """
     Authenticate an NPO user and return Firebase tokens.
@@ -96,8 +94,19 @@ def login_npo(req: https_fn.Request) -> https_fn.Response:
                 mimetype="application/json"
             )
         
+        # Get Firebase API key from environment variable
+        firebase_api_key = os.environ.get("WEB_API_KEY")
+        if not firebase_api_key:
+            logger.error("WEB_API_KEY environment variable not set")
+            return https_fn.Response(
+                response=json.dumps({"error": "Server configuration error"}),
+                status=500,
+                headers=get_cors_headers(),
+                mimetype="application/json"
+            )
+        
         # Authenticate with Firebase Auth REST API
-        auth_url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIREBASE_API_KEY}"
+        auth_url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={firebase_api_key}"
         
         auth_payload = {
             "email": email,
