@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import type { Sector } from '../types'
 import { fetchGrants } from '../services/grantsService'
 import { sendTopGrantMatches_viaApi } from '../services/emailService'
+import { authFetch, getStoredIdToken } from '../services/authService'
 import { getMatchedGrants } from '../utils/matching'
 import type { Grant, Organization } from '../types'
 
@@ -167,7 +168,7 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
       })(),
     }
 
-    const token = localStorage.getItem('granted_token')
+    const token = getStoredIdToken() || localStorage.getItem('granted_token')
     if (!token) {
       // No token: fall back to local/demo update
       if (setOrgProfile) {
@@ -180,12 +181,8 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
     }
 
     try {
-      const res = await fetch('https://update-npo-kun7hshp7q-as.a.run.app', {
+      const res = await authFetch('https://update-npo-kun7hshp7q-as.a.run.app', {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
         body: JSON.stringify(body),
       })
 

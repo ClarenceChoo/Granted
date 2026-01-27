@@ -1,8 +1,7 @@
 import { Search, Bell } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
-import { signOut as firebaseSignOut } from 'firebase/auth'
-import { auth } from '../../firebase'
+// Firebase removed: rely on backend tokens stored locally
 import type { Dispatch, SetStateAction } from 'react'
 
 export default function Navbar({
@@ -29,15 +28,11 @@ export default function Navbar({
 
     const handleSignOut = () => {
         // clear local auth artifacts
+        localStorage.removeItem('idToken')
+        localStorage.removeItem('refreshToken')
+        localStorage.removeItem('uid')
         localStorage.removeItem('granted_token')
-        // Sign out of Firebase if available
-        if (auth) {
-            try {
-                firebaseSignOut(auth).catch((e) => console.warn('Firebase signOut error', e))
-            } catch (e) {
-                console.warn('Firebase signOut threw', e)
-            }
-        }
+        // No Firebase SDK: tokens removed from storage
 
         setIsAuthenticated?.(false)
         setUser?.(null)

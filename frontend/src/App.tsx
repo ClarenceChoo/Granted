@@ -50,6 +50,21 @@ export default function App() {
     loadGrants()
   }, [])
 
+  // Keep auth state in sync with Firebase SDK (if available)
+  useEffect(() => {
+    // No Firebase SDK: determine auth from stored idToken
+    const idToken = localStorage.getItem('idToken')
+    if (idToken) {
+      setIsAuthenticated(true)
+      const uid = localStorage.getItem('uid')
+      setUser(uid ? { email: uid } : null)
+    } else {
+      setIsAuthenticated(false)
+      setUser(null)
+    }
+    // No cleanup required
+  }, [])
+
   // Derived State: Calculate matches based on current profile
   const matchedGrants = useMemo(() => {
     if (!isOnboardingComplete) return grants.slice(0, 3).map(g => ({ ...g, matchScore: 90 }));
