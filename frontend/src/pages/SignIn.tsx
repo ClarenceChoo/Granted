@@ -1,8 +1,11 @@
 import { useState } from 'react'
 // Firebase removed: rely on backend login response tokens
 import { loginNPO } from '../services/authService'
+import { useState, useEffect } from 'react'
+import { signInWithCustomToken } from 'firebase/auth'
+import { auth } from '../firebase'
 import { useLocation, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Mail, Lock, Building2, User, ChevronRight, Wand2 } from 'lucide-react'
+import { ArrowLeft, Mail, Lock, Building2, User, ChevronRight, Wand2, Sparkles } from 'lucide-react'
 import type { Organization } from '../types'
 
 export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: any) => void }) {
@@ -10,19 +13,64 @@ export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: an
     const navigate = useNavigate()
 
     // Check if we were sent here with pre-filled data
-    const prefillData = location.state as Organization | undefined
+    const prefillData = location.state as Organization & { aiProfile?: any } | undefined
+    // Allow checking either direct prefill or nested aiProfile
+    const effectivePrefill = prefillData?.aiProfile || prefillData;
+
     const initialMode = location.hash === '#register' || !!prefillData ? 'register' : 'login'
 
     const [mode, setMode] = useState<'login' | 'register'>(initialMode)
+
+    // Initialize empty if we are going to stream, otherwise standard defaults
     const [formData, setFormData] = useState({
         email: '',
         password: '',
-        name: prefillData?.name || '',
-        uen: prefillData?.uen || '',
-        sector: prefillData?.sector || 'Social Service',
+        name: effectivePrefill ? '' : '',
+        uen: effectivePrefill ? '' : '',
+        sector: effectivePrefill?.sector || 'Social Service',
+        mission: effectivePrefill ? '' : '',
     })
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const [showAiOverlay, setShowAiOverlay] = useState(false)
+
+    // AI Auto-fill Simulation sequence
+    useEffect(() => {
+        if (effectivePrefill) {
+            setShowAiOverlay(true)
+
+            // 1. Show Overlay for 2s
+            const timer = setTimeout(async () => {
+                setShowAiOverlay(false)
+
+                // 2. Stream Name
+                if (effectivePrefill.name) {
+                    await streamText('name', effectivePrefill.name)
+                }
+
+                // 3. Stream UEN
+                if (effectivePrefill.uen) {
+                    await streamText('uen', effectivePrefill.uen)
+                }
+
+                // 4. Stream Mission
+                if (effectivePrefill.mission) {
+                    await streamText('mission', effectivePrefill.mission)
+                }
+
+                
+            }, 2000)
+            return () => clearTimeout(timer)
+        }
+    }, [prefillData])
+
+    const streamText = async (field: keyof typeof formData, text: string) => {
+        for (let i = 0; i <= text.length; i++) {
+            setFormData(prev => ({ ...prev, [field]: text.slice(0, i) }))
+            await new Promise(r => setTimeout(r, 15 + Math.random() * 20)) // fast typing
+        }
+    }
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target
         setFormData(prev => ({ ...prev, [name]: value }))
     }
@@ -34,6 +82,7 @@ export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: an
             name: 'Harmony Arts Centre',
             uen: 'T12SS0034L',
             sector: 'Arts & Heritage',
+            mission: 'To make the arts accessible to all, fostering community engagement and cultural appreciation through inclusive programmes and workshops.',
         })
     }
 
@@ -109,10 +158,43 @@ export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: an
             alert('Login failed: ' + (err?.message || String(err)))
             return
         }
+
+        alert('No local account found for this email. Please register first, or provide a server-side sign-in API.')
+        return
+    }
+
+    // Dynamic class for pre-filled fields to give them a "glow"
+    const getFieldClass = (fieldName: string) => {
+        const baseClass = "w-full pl-10 pr-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] focus:border-transparent transition"
+        // If we have prefill data and this field matches, add a subtle glow/highlight
+        if (effectivePrefill && effectivePrefill[fieldName as keyof Organization]) {
+            return `${baseClass} border-indigo-300 bg-indigo-50/30 text-indigo-900 ring-2 ring-indigo-100`
+        }
+        return `${baseClass} border-slate-200`
     }
 
     return (
-        <div className="min-h-screen grid md:grid-cols-2">
+        <div className="min-h-screen grid md:grid-cols-2 relative h-full">
+
+            {/* AI Overlay */}
+            {showAiOverlay && (
+                <div className="absolute inset-0 z-50 bg-white/95 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300">
+                    <div className="relative">
+                        <div className="absolute inset-0 bg-blue-500 rounded-full blur-xl opacity-20 animate-pulse"></div>
+                        <div className="w-16 h-16 bg-gradient-to-tr from-[#1E3A8A] to-[#0F766E] rounded-2xl flex items-center justify-center shadow-xl rotate-3 animate-spin-slow relative z-10">
+                            <Sparkles className="w-8 h-8 text-white" />
+                        </div>
+                    </div>
+                    <h3 className="mt-8 text-2xl font-bold text-slate-800">AI Agent Working...</h3>
+                    <p className="text-slate-500 mt-2">Analysing your chat to pre-fill your application.</p>
+                    <div className="mt-8 flex gap-2">
+                        <span className="w-2 h-2 bg-[#1E3A8A] rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                        <span className="w-2 h-2 bg-[#1E3A8A] rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                        <span className="w-2 h-2 bg-[#1E3A8A] rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                    </div>
+                </div>
+            )}
+
             {/* Left: Branding & Info */}
             <div className="hidden md:flex bg-[#1E3A8A] text-white p-12 flex-col justify-between relative overflow-hidden">
                 <div className="relative z-10">
@@ -176,12 +258,12 @@ export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: an
                         <Wand2 className="w-3 h-3" /> Demo: Fill Form
                     </button>
 
-                    {prefillData && mode === 'register' && (
-                        <div className="mb-6 bg-[#1E3A8A]/10 border border-[#1E3A8A]/20 text-[#1E3A8A] px-4 py-3 rounded-xl text-sm flex items-start gap-2">
-                            <div className="mt-0.5"><Building2 className="w-4 h-4" /></div>
+                    {prefillData && mode === 'register' && !showAiOverlay && (
+                        <div className="mb-6 bg-indigo-50 border border-indigo-100 text-[#1E3A8A] px-4 py-3 rounded-xl text-sm flex items-start gap-3 animate-in fade-in slide-in-from-top-4 duration-700">
+                            <div className="mt-0.5 bg-indigo-100 p-1.5 rounded-lg"><Sparkles className="w-4 h-4 text-indigo-600" /></div>
                             <div>
-                                <span className="font-semibold">Details Pre-filled by AI.</span>
-                                <p className="text-[#1E3A8A]/80 mt-1 text-xs">We've populated the form with details from your chat.</p>
+                                <span className="font-bold text-indigo-900">AI Auto-Fill Complete</span>
+                                <p className="text-indigo-800/80 mt-1 text-xs leading-relaxed">We've extracted your details and mission statement from the chat to jumpstart your profile.</p>
                             </div>
                         </div>
                     )}
@@ -198,7 +280,7 @@ export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: an
                                             name="name"
                                             value={formData.name}
                                             onChange={handleInputChange}
-                                            className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] focus:border-transparent transition"
+                                            className={getFieldClass('name')}
                                             placeholder="Organization Name"
                                             required
                                         />
@@ -213,7 +295,7 @@ export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: an
                                             name="uen"
                                             value={formData.uen}
                                             onChange={handleInputChange}
-                                            className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] focus:border-transparent transition"
+                                            className={getFieldClass('uen')}
                                             placeholder="T08GB0021K"
                                             required
                                         />
@@ -226,13 +308,27 @@ export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: an
                                             name="sector"
                                             value={formData.sector}
                                             onChange={handleInputChange}
-                                            className="w-full pl-3 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] focus:border-transparent transition bg-white"
+                                            className={`${getFieldClass('sector')} bg-white pl-3`}
                                         >
                                             {['Social Service', 'Arts & Heritage', 'Sports', 'Community', 'Education', 'Health', 'Environment', 'Other'].map(s => (
                                                 <option key={s} value={s}>{s}</option>
                                             ))}
                                         </select>
                                     </div>
+                                </div>
+                                <div className="animate-in fade-in slide-in-from-bottom-2 duration-1000 delay-100">
+                                    <label className="block text-sm font-medium text-slate-700 mb-1 flex justify-between">
+                                        <span>Mission Statement</span>
+                                        {effectivePrefill?.mission && <span className="text-xs text-indigo-600 font-medium flex items-center gap-1"><Sparkles className="w-3 h-3" /> AI Generated</span>}
+                                    </label>
+                                    <textarea
+                                        name="mission"
+                                        value={formData.mission}
+                                        onChange={handleInputChange}
+                                        rows={3}
+                                        className={getFieldClass('mission')}
+                                        placeholder="Briefly describe your organization's mission..."
+                                    />
                                 </div>
                             </>
                         )}
