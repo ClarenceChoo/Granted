@@ -53,7 +53,8 @@ def send_hello_world_email(req: https_fn.Request) -> https_fn.Response:
             "message": {
                 "subject": "wassup gays, the email service is up and running",
                 "text": "i love hong xun ass",
-                "html": "<h1>Hello World!</h1><p>hello world, i fucking spent 6 hours building the email serivce to make this thing work. below ive attached of my gay aass face</p><img src=\"https://i.imgur.com/KawrXNF.jpeg\">",
+                "html": open("static/template.html", "r").read()
+                # "html": "<h1>Hello World!</h1><p>hello world, i fucking spent 6 hours building the email serivce to make this thing work. below ive attached of my gay aass face</p><img src=\"https://i.imgur.com/KawrXNF.jpeg\">",
             }
         })
         
@@ -66,7 +67,7 @@ def send_hello_world_email(req: https_fn.Request) -> https_fn.Response:
         )
     
     except Exception as e:
-        logger.error("Failed to queue email", error=str(e))
+        logger.error("Failed to queue email", error=e)
         return https_fn.Response(
             f'{{"error": "Failed to queue email: {str(e)}"}}',
             status=500,
