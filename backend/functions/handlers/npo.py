@@ -196,6 +196,7 @@ def create_npo(req: https_fn.Request) -> https_fn.Response:
             "description": description,
             "beneficiaries": beneficiaries,
             "budget": budget,
+            "saved_grants": [],  # Initialize empty saved grants list (max 5)
             "created_at": firestore.SERVER_TIMESTAMP,
             "updated_at": firestore.SERVER_TIMESTAMP
         }
