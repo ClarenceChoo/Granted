@@ -1,9 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 // Firebase removed: rely on backend login response tokens
 import { loginNPO } from '../services/authService'
-import { useState, useEffect } from 'react'
-import { signInWithCustomToken } from 'firebase/auth'
-import { auth } from '../firebase'
 import { useLocation, Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Mail, Lock, Building2, User, ChevronRight, Wand2, Sparkles } from 'lucide-react'
 import type { Organization } from '../types'
