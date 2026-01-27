@@ -23,3 +23,4 @@ initialize_app()
 # Import handlers
 from handlers.healthcheck import healthcheck
 from handlers.sync_grants import sync_grants_daily, sync_grants_manual
+from handlers.npo import create_npo

@@ -10,7 +10,10 @@ from zoneinfo import ZoneInfo
 from firebase_functions import scheduler_fn, https_fn
 from firebase_admin import firestore
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 GRANTS_API_URL = "https://oursggrants.gov.sg/api/v1/grant_metadata/explore_grants"
 
@@ -41,22 +44,24 @@ def _sync_grants_logic() -> dict:
     response.raise_for_status()
     
     grants_data = response.json()
-    logger.info(f"Retrieved {len(grants_data) if isinstance(grants_data, list) else 'unknown'} grants from API")
-    
-    # Get Firestore client
-    db = firestore.client()
-    grants_collection = db.collection("grants")
-    
-    # Process grants data
-    new_count = 0
-    updated_count = 0
-    skipped_count = 0
     
     # Handle both list and dict response formats
     if isinstance(grants_data, list):
         grants_list = grants_data
     else:
         grants_list = grants_data.get("grant_metadata", grants_data.get("data", []))
+    
+    logger.info(f"Retrieved {len(grants_list)} grants from API")
+    
+    # Get Firestore client
+    db = firestore.client()
+    grants_collection = db.collection("grants")
+    logger.info("Connected to Firestore grants collection")
+    
+    # Process grants data
+    new_count = 0
+    updated_count = 0
+    skipped_count = 0
     
     for grant in grants_list:
         # Use grant ID as document ID (adjust field name based on actual API response)
