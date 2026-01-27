@@ -35,6 +35,10 @@ def get_openai_api_key() -> str:
     if not api_key:
         logger.error("[Config] OPENAI_API_KEY environment variable not set")
         raise ValueError("OPENAI_API_KEY environment variable is required")
+    
+    # Strip whitespace and newlines that may have been added during secret creation
+    api_key = api_key.strip()
+    
     return api_key
 
 

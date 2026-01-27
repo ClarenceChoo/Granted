@@ -28,7 +28,7 @@ logger.setLevel(logging.INFO)
     secrets=["OPENAI_API_KEY"]
 )
 def on_npo_change(
-    event: firestore_fn.Event[firestore_fn.Change[DocumentSnapshot]]
+    event: firestore_fn.Event[firestore_fn.Change[DocumentSnapshot | None]]
 ) -> None:
     """
     Trigger matching when an NPO document is created or updated.
@@ -137,7 +137,7 @@ def on_npo_change(
     secrets=["OPENAI_API_KEY"]
 )
 def on_grant_change(
-    event: firestore_fn.Event[firestore_fn.Change[DocumentSnapshot]]
+    event: firestore_fn.Event[firestore_fn.Change[DocumentSnapshot | None]]
 ) -> None:
     """
     Trigger re-matching for all NPOs when a grant is created or updated.
