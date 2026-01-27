@@ -1,3 +1,6 @@
+import { useState } from 'react'
+// Firebase removed: rely on backend login response tokens
+import { loginNPO } from '../services/authService'
 import { useState, useEffect } from 'react'
 import { signInWithCustomToken } from 'firebase/auth'
 import { auth } from '../firebase'
@@ -121,24 +124,19 @@ export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: an
                 users[formData.email] = { password: formData.password, profile: { email: formData.email, name: formData.name, uen: formData.uen, sector: formData.sector, ...created } }
                 localStorage.setItem('granted_users', JSON.stringify(users))
 
-                // Optionally store token if backend returned one
-                if ((created as any).token) {
-                    const token = (created as any).token
-                    localStorage.setItem('granted_token', token)
-
-                    // If Firebase is configured, sign-in with custom token
-                    if (auth) {
-                        try {
-                            await signInWithCustomToken(auth, token)
-                        } catch (err) {
-                            console.warn('Firebase signInWithCustomToken failed', err)
-                        }
+                    // After creating the NPO on your backend, call the login endpoint to obtain idToken/refreshToken
+                    try {
+                        await loginNPO(formData.email, formData.password)
+                        onAuthSuccess?.(users[formData.email].profile)
+                        alert('Successfully Registered and Logged In!')
+                        navigate('/')
+                    } catch (loginErr: any) {
+                        // registration succeeded but login failed — still inform user
+                        console.warn('Registered but login failed', loginErr)
+                        onAuthSuccess?.(users[formData.email].profile)
+                        alert('Registered successfully. Please sign in.')
+                        navigate('/signin')
                     }
-                }
-
-                onAuthSuccess?.(users[formData.email].profile)
-                alert('Successfully Registered!')
-                navigate('/')
             } catch (err: any) {
                 alert('Registration error: ' + (err?.message || String(err)))
             }
@@ -146,24 +144,18 @@ export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: an
             return
         }
 
-        // Login mode: validate against locally saved users (created via register above)
-        const usersRaw = localStorage.getItem('granted_users')
-        const users = usersRaw ? JSON.parse(usersRaw) : {}
-        const entry = users[formData.email]
-        if (entry && entry.password === formData.password) {
-            // If backend token exists, try Firebase sign-in with custom token
-            const token = localStorage.getItem('granted_token')
-            if (token && auth) {
-                try {
-                    await signInWithCustomToken(auth, token)
-                } catch (err) {
-                    console.warn('Firebase signInWithCustomToken (login) failed', err)
-                }
-            }
+        // Login mode: call backend login endpoint to get idToken etc.
+        try {
+            await loginNPO(formData.email, formData.password)
+            // backend returned tokens stored by loginNPO; no Firebase exchange required
 
-            onAuthSuccess?.(entry.profile)
+            const profile = { email: formData.email, name: formData.name || formData.email }
+            onAuthSuccess?.(profile)
             alert('Successfully Logged In!')
             navigate('/')
+            return
+        } catch (err: any) {
+            alert('Login failed: ' + (err?.message || String(err)))
             return
         }
 
