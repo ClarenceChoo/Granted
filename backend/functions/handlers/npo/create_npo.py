@@ -1,51 +1,18 @@
 """
-HTTP functions for managing NPO (Non-Profit Organisation) entities in Firestore.
+HTTP function for creating NPO (Non-Profit Organisation) entities.
 """
 
 import json
 import logging
-import re
 from firebase_functions import https_fn
 from firebase_admin import firestore, auth
+
+from .utils import get_cors_headers, validate_uen, validate_email
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-
-def get_cors_headers():
-    """Return CORS headers for API responses"""
-    return {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
-        "Access-Control-Max-Age": "3600"
-    }
-
-
-def validate_uen(uen: str) -> bool:
-    """
-    Validate Singapore UEN format.
-    UEN can be:
-    - Business (ROB): 8-9 digits + 1 letter (e.g., 53312345A)
-    - Local Company (ROC): 9 digits + 1 letter (e.g., 201912345A)
-    - Others: 10 characters (e.g., T08GA0001A)
-    """
-    if not uen:
-        return False
-    uen = uen.upper().strip()
-    # Basic UEN pattern - alphanumeric, 9-10 characters
-    pattern = r'^[A-Z0-9]{9,10}$'
-    return bool(re.match(pattern, uen))
-
-
-def validate_email(email: str) -> bool:
-    """Validate email format"""
-    if not email:
-        return False
-    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-    return bool(re.match(pattern, email))
 
 
 @https_fn.on_request()
@@ -196,6 +163,7 @@ def create_npo(req: https_fn.Request) -> https_fn.Response:
             "description": description,
             "beneficiaries": beneficiaries,
             "budget": budget,
+            "saved_grants": [],  # Initialize empty saved grants list (max 5)
             "created_at": firestore.SERVER_TIMESTAMP,
             "updated_at": firestore.SERVER_TIMESTAMP
         }

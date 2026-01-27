@@ -6,7 +6,6 @@ import type { Organization, Sector } from '../../../types'
 interface GrantAssistantProps {
     isOpen: boolean
     onClose: () => void
-    setChatOpen?: (b: boolean) => void
     onProfileUpdate: (profile: Organization) => void
     currentProfile: Organization
 }
@@ -35,9 +34,9 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
     }
 
     // Local state to manage the inputs before pushing up to parent
-    const [localProfile, setLocalProfile] = useState<Organization>(currentProfile)
-    const [beneficiariesLocal, setBeneficiariesLocal] = useState(currentProfile.beneficiaries || 'Children, youth, local communities')
-    const [budgetLocal, setBudgetLocal] = useState(currentProfile.annualBudget || '<$100k')
+    const [localProfile, setLocalProfile] = useState<Organization & Partial<{ beneficiaries: string[]; annualBudget: string | number }>>(currentProfile)
+    const [beneficiariesLocal, setBeneficiariesLocal] = useState<string>((Array.isArray((currentProfile as any).beneficiaries) ? (currentProfile as any).beneficiaries.join(', ') : (currentProfile as any).beneficiaries) || 'Children, youth, local communities')
+    const [budgetLocal, setBudgetLocal] = useState<string>(String((currentProfile as any).annualBudget || '<$100k'))
     const [isTyping, setIsTyping] = useState(false)
     const [isRefining, setIsRefining] = useState(false)
     const [aiSuggestion, setAiSuggestion] = useState<any>(null)
@@ -53,34 +52,23 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
             // initialize local state from parent profile when opening the assistant
             console.debug('GrantAssistant: opening — initializing localProfile', currentProfile)
             setLocalProfile(currentProfile)
-            setBeneficiariesLocal(currentProfile.beneficiaries || 'Children, youth, local communities')
-            setBudgetLocal(currentProfile.annualBudget || '<$100k')
+            setBeneficiariesLocal((Array.isArray((currentProfile as any).beneficiaries) ? (currentProfile as any).beneficiaries.join(', ') : (currentProfile as any).beneficiaries) || 'Children, youth, local communities')
+            setBudgetLocal(String((currentProfile as any).annualBudget || '<$100k'))
         }
     }, [isOpen])
 
-    // If the chat is closed unexpectedly while onboarding, reopen it to avoid losing progress
-    useEffect(() => {
-        console.debug('GrantAssistant:isOpen changed', { isOpen, onboardingStep })
-        if (!isOpen && onboardingStep !== 'complete') {
-            console.debug('GrantAssistant: was closed during onboarding — reopening')
-            // try to reopen the chat via parent setter if available
-            if (typeof (arguments as any) !== 'undefined') { }
-            if (typeof ({} as any) !== 'undefined') { }
-            if (typeof (setChatOpen) === 'function') {
-                // small delay to allow whatever triggered the close to settle
-                setTimeout(() => setChatOpen(true), 50)
-            }
-        }
-    }, [isOpen, onboardingStep])
+    // Note: previously the assistant attempted to auto-reopen if closed during onboarding.
+    // That behavior prevented users from closing the chat. We no longer auto-reopen;
+    // closing always respects the parent's `onClose` callback.
 
-    const createAISuggestion = (profile: Organization & { beneficiaries?: string; annualBudget?: string }) => {
+    const createAISuggestion = (profile: Organization & Partial<{ beneficiaries?: string | string[]; annualBudget?: string | number }>) => {
         const mission = profile.mission || ''
         return {
             headline: `AI Suggestion: Personalized outreach for ${profile.name || 'your organisation'}`,
             blurb: `Based on your mission "${mission}", we recommend focusing on small-scale community workshops, school outreach programmes, and collaborative performances. Prioritise grants that support arts education, capacity-building, and community engagement. Suggested messaging: "${mission} — engaging children and youth through accessible arts education and community programmes."`,
             suggestedMission: profile.mission,
-            suggestedBeneficiaries: profile.beneficiaries || 'Children, youth, local communities',
-            suggestedBudget: profile.annualBudget || '<$100k',
+            suggestedBeneficiaries: Array.isArray((profile as any).beneficiaries) ? (profile as any).beneficiaries.join(', ') : (profile as any).beneficiaries || 'Children, youth, local communities',
+            suggestedBudget: (profile as any).annualBudget || '<$100k',
         }
     }
 

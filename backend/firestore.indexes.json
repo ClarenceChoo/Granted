@@ -39,64 +39,79 @@
         { "fieldPath": "beneficiaries", "arrayConfig": "CONTAINS" },
         { "fieldPath": "created_at", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "mail",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "delivery.state", "order": "ASCENDING" },
+        { "fieldPath": "delivery.startTime", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "mail",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "to", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "delivery.startTime", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": [
     {
       "collectionGroup": "grants",
       "fieldPath": "id",
-      "indexes": [
-        { "order": "ASCENDING", "queryScope": "COLLECTION" }
-      ]
+      "indexes": [{ "order": "ASCENDING", "queryScope": "COLLECTION" }]
     },
     {
       "collectionGroup": "grants",
       "fieldPath": "name",
-      "indexes": [
-        { "order": "ASCENDING", "queryScope": "COLLECTION" }
-      ]
+      "indexes": [{ "order": "ASCENDING", "queryScope": "COLLECTION" }]
     },
     {
       "collectionGroup": "grants",
       "fieldPath": "agency_code",
-      "indexes": [
-        { "order": "ASCENDING", "queryScope": "COLLECTION" }
-      ]
+      "indexes": [{ "order": "ASCENDING", "queryScope": "COLLECTION" }]
     },
     {
       "collectionGroup": "grants",
       "fieldPath": "status",
-      "indexes": [
-        { "order": "ASCENDING", "queryScope": "COLLECTION" }
-      ]
+      "indexes": [{ "order": "ASCENDING", "queryScope": "COLLECTION" }]
     },
     {
       "collectionGroup": "npos",
       "fieldPath": "uen",
-      "indexes": [
-        { "order": "ASCENDING", "queryScope": "COLLECTION" }
-      ]
+      "indexes": [{ "order": "ASCENDING", "queryScope": "COLLECTION" }]
     },
     {
       "collectionGroup": "npos",
       "fieldPath": "email",
-      "indexes": [
-        { "order": "ASCENDING", "queryScope": "COLLECTION" }
-      ]
+      "indexes": [{ "order": "ASCENDING", "queryScope": "COLLECTION" }]
     },
     {
       "collectionGroup": "npos",
       "fieldPath": "sector",
-      "indexes": [
-        { "order": "ASCENDING", "queryScope": "COLLECTION" }
-      ]
+      "indexes": [{ "order": "ASCENDING", "queryScope": "COLLECTION" }]
     },
     {
       "collectionGroup": "npos",
       "fieldPath": "name",
-      "indexes": [
-        { "order": "ASCENDING", "queryScope": "COLLECTION" }
-      ]
+      "indexes": [{ "order": "ASCENDING", "queryScope": "COLLECTION" }]
+    },
+    {
+      "collectionGroup": "mail",
+      "fieldPath": "delivery.state",
+      "indexes": [{ "order": "ASCENDING", "queryScope": "COLLECTION" }]
+    },
+    {
+      "collectionGroup": "mail",
+      "fieldPath": "delivery.startTime",
+      "indexes": [{ "order": "DESCENDING", "queryScope": "COLLECTION" }]
+    },
+    {
+      "collectionGroup": "mail",
+      "fieldPath": "delivery.endTime",
+      "indexes": [{ "order": "DESCENDING", "queryScope": "COLLECTION" }]
     }
   ]
 }

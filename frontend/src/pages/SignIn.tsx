@@ -1,4 +1,7 @@
 import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import { signInWithCustomToken } from 'firebase/auth'
+import { auth } from '../firebase'
 import { useLocation, Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Mail, Lock, Building2, User, ChevronRight, Wand2, Sparkles, Loader2 } from 'lucide-react'
 import type { Organization } from '../types'
@@ -83,21 +86,95 @@ export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: an
         })
     }
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        // Mock authentication: notify parent and navigate home
-        const profile = {
-            email: formData.email,
-            name: formData.name,
-            uen: formData.uen,
-            sector: formData.sector,
-            mission: formData.mission || '',
+
+        if (mode === 'register') {
+            // Build payload for backend; AI prefill (location.state) may contain extra fields
+            const aiData = (prefillData || (location.state as any)) as any
+            const payload: any = {
+                email: formData.email,
+                password: formData.password,
+                name: formData.name,
+                uen: formData.uen,
+                sector: formData.sector,
+                description: aiData?.mission || aiData?.description || '',
+                beneficiaries: aiData?.beneficiaries || [],
+                budget: aiData?.budget || 0,
+            }
+
+            try {
+                const res = await fetch('https://create-npo-kun7hshp7q-as.a.run.app', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                })
+
+                if (!res.ok) {
+                    const txt = await res.text()
+                    alert(`Registration failed: ${res.status} ${txt}`)
+                    return
+                }
+
+                const created = await res.json()
+
+                // Save user locally so sign-in can work without a dedicated sign-in API
+                const usersRaw = localStorage.getItem('granted_users')
+                const users = usersRaw ? JSON.parse(usersRaw) : {}
+                users[formData.email] = { password: formData.password, profile: { email: formData.email, name: formData.name, uen: formData.uen, sector: formData.sector, ...created } }
+                localStorage.setItem('granted_users', JSON.stringify(users))
+
+                // Optionally store token if backend returned one
+                if ((created as any).token) {
+                    const token = (created as any).token
+                    localStorage.setItem('granted_token', token)
+
+                    // If Firebase is configured, sign-in with custom token
+                    if (auth) {
+                        try {
+                            await signInWithCustomToken(auth, token)
+                        } catch (err) {
+                            console.warn('Firebase signInWithCustomToken failed', err)
+                        }
+                    }
+                }
+
+                onAuthSuccess?.(users[formData.email].profile)
+                alert('Successfully Registered!')
+                navigate('/')
+            } catch (err: any) {
+                alert('Registration error: ' + (err?.message || String(err)))
+            }
+
+            return
+        }
+
+        // Login mode: validate against locally saved users (created via register above)
+        const usersRaw = localStorage.getItem('granted_users')
+        const users = usersRaw ? JSON.parse(usersRaw) : {}
+        const entry = users[formData.email]
+        if (entry && entry.password === formData.password) {
+            // If backend token exists, try Firebase sign-in with custom token
+            const token = localStorage.getItem('granted_token')
+            if (token && auth) {
+                try {
+                    await signInWithCustomToken(auth, token)
+                } catch (err) {
+                    console.warn('Firebase signInWithCustomToken (login) failed', err)
+                }
+            }
+
+            onAuthSuccess?.(entry.profile)
+            alert('Successfully Logged In!')
+            navigate('/')
+            return
         }
 
         onAuthSuccess?.(profile)
         // small delay to show success state if we wanted, but alert is fine for now
         alert(`Successfully ${mode === 'login' ? 'Logged In' : 'Registered'}!`)
         navigate('/')
+        alert('No local account found for this email. Please register first, or provide a server-side sign-in API.')
     }
 
     // Dynamic class for pre-filled fields to give them a "glow"

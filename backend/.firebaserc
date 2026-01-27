@@ -1,5 +1,13 @@
 {
   "projects": {
     "default": "granted-6590c"
+  },
+  "targets": {},
+  "etags": {
+    "granted-6590c": {
+      "extensionInstances": {
+        "firestore-send-email": "c10de3b8be6b5f7869251f1ffbbd8e7d3484505acfebd4b053668917422e52c9"
+      }
+    }
   }
 }
