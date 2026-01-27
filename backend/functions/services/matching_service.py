@@ -39,7 +39,8 @@ class GrantMatch(BaseModel):
 class MatchingResult(BaseModel):
     """Structured output from OpenAI for grant matching."""
     matches: list[GrantMatch] = Field(
-        description="Top 3 most relevant grants for the NPO, sorted by similarity score descending",
+        description="Exactly 3 most relevant grants for the NPO, sorted by similarity score descending",
+        min_length=3,
         max_length=3
     )
 
@@ -137,9 +138,11 @@ Amount: {grant.get('amount', 'Varies')}
             }
         )
         
-        if not grants:
-            logger.warning(f"[AI Inference] No grants available for matching NPO: {npo_id}")
-            return MatchingResult(matches=[])
+        if len(grants) < 3:
+            logger.error(
+                f"[AI Inference] Insufficient grants for matching NPO: {npo_id}. Need at least 3, got {len(grants)}"
+            )
+            return None
         
         # Build context for the prompt
         npo_context = self._build_npo_context(npo_data)
@@ -152,15 +155,16 @@ Your task is to analyze an NPO's profile and match them with the most relevant g
 2. Beneficiary match - Do the grant's target beneficiaries align with the NPO's?
 3. Mission alignment - Does the grant's purpose align with the NPO's description and goals?
 4. Budget fit - Is the grant amount reasonable for the NPO's scale?
+5. Grant status - Prioritize "Open" grants, but consider others if highly relevant
 
-Provide exactly 3 matches (or fewer if not enough relevant grants exist).
+You MUST provide exactly 3 matches, no more and no fewer. Rank all available grants and return the top 3 most relevant.
 Score each match from 0-100 where:
 - 90-100: Excellent match, highly recommended
 - 70-89: Good match, worth applying
 - 50-69: Moderate match, consider if no better options
-- Below 50: Poor match, not recommended
+- Below 50: Poor match, not recommended (but still include if it's in the top 3)
 
-Be objective and provide clear reasoning for each match."""
+Be objective and provide clear reasoning for each match. Consider grant status in your scoring but focus primarily on relevance."""
 
         user_prompt = f"""Please match the following NPO to the most relevant grants:
 
@@ -170,7 +174,7 @@ Be objective and provide clear reasoning for each match."""
 === AVAILABLE GRANTS ===
 {grants_context}
 
-Analyze and return the top 3 most relevant grants with similarity scores and reasoning."""
+Analyze and return EXACTLY 3 grants ranked by relevance. You must provide 3 matches with similarity scores and reasoning, even if some are less relevant than others."""
 
         try:
             logger.info(
@@ -178,7 +182,8 @@ Analyze and return the top 3 most relevant grants with similarity scores and rea
                 extra={
                     "model": self.MODEL,
                     "npo_id": npo_id,
-                    "prompt_length": len(user_prompt)
+                    "prompt_length": len(user_prompt),
+                    "system_prompt_length": len(system_prompt)
                 }
             )
             
@@ -199,6 +204,14 @@ Analyze and return the top 3 most relevant grants with similarity scores and rea
             duration_ms = (end_time - start_time).total_seconds() * 1000
             
             result = completion.choices[0].message.parsed
+            
+            # Validate result
+            if not result or not result.matches:
+                logger.error(
+                    f"[AI Inference] Empty or invalid response from OpenAI",
+                    extra={"npo_id": npo_id}
+                )
+                return None
             
             logger.info(
                 f"[AI Inference] Successfully received response from OpenAI",
@@ -232,11 +245,13 @@ Analyze and return the top 3 most relevant grants with similarity scores and rea
             
         except Exception as e:
             logger.error(
-                f"[AI Inference] Error during OpenAI API call",
+                f"[AI Inference] Error during OpenAI API call: {str(e)}",
                 extra={
                     "npo_id": npo_id,
                     "error": str(e),
-                    "error_type": type(e).__name__
+                    "error_type": type(e).__name__,
+                    "num_grants": len(grants),
+                    "prompt_length": len(user_prompt)
                 },
                 exc_info=True
             )
@@ -249,7 +264,7 @@ Analyze and return the top 3 most relevant grants with similarity scores and rea
 
 def get_all_grants(db: firestore.Client) -> list[dict]:
     """
-    Retrieve all active grants from Firestore.
+    Retrieve all grants from Firestore.
     
     Args:
         db: Firestore client
@@ -262,15 +277,15 @@ def get_all_grants(db: firestore.Client) -> list[dict]:
     grants = []
     grants_ref = db.collection("grants")
     
-    # Only get grants that are open/active
-    docs = grants_ref.where("status", "==", "Open").stream()
+    # Get ALL grants (no status filter - AI will evaluate relevance)
+    docs = grants_ref.stream()
     
     for doc in docs:
         grant_data = doc.to_dict()
         grant_data["id"] = doc.id
         grants.append(grant_data)
     
-    logger.info(f"[Firestore] Retrieved {len(grants)} active grants")
+    logger.info(f"[Firestore] Retrieved {len(grants)} grants (all statuses)")
     return grants
 
 
@@ -409,8 +424,8 @@ def match_single_npo(
     
     # Get all grants
     grants = get_all_grants(db)
-    if not grants:
-        logger.warning(f"[Matching] No grants available for matching")
+    if len(grants) < 3:
+        logger.error(f"[Matching] Insufficient grants for matching. Need at least 3, got {len(grants)}")
         return None
     
     # Run AI matching
@@ -450,9 +465,9 @@ def match_all_npos(
     
     # Get all grants first (shared across all NPOs)
     grants = get_all_grants(db)
-    if not grants:
-        logger.warning(f"[Matching] No grants available for matching")
-        return {"success": False, "error": "No grants available", "processed": 0}
+    if len(grants) < 3:
+        logger.error(f"[Matching] Insufficient grants for matching. Need at least 3, got {len(grants)}")
+        return {"success": False, "error": f"Need at least 3 grants, found {len(grants)}", "processed": 0, "failed": 0}
     
     # Get all NPOs
     npos = get_all_npos(db)
@@ -483,11 +498,15 @@ def match_all_npos(
                     "num_matches": len(result.matches)
                 })
             else:
+                logger.error(
+                    f"[Matching] AI inference returned None for NPO: {npo_id}",
+                    extra={"npo_id": npo_id, "npo_name": npo_data.get('name')}
+                )
                 results["failed"] += 1
                 results["npo_results"].append({
                     "npo_id": npo_id,
                     "status": "failed",
-                    "error": "AI inference failed"
+                    "error": "AI inference failed - check logs for details"
                 })
                 
         except Exception as e:
