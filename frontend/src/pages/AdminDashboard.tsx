@@ -1,21 +1,22 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import type { Sector } from '../types'
 import { fetchGrants } from '../services/grantsService'
 import { sendTopGrantMatches_viaApi } from '../services/emailService'
 import { getMatchedGrants } from '../utils/matching'
 import type { Grant, Organization } from '../types'
 
-export default function AdminDashboard({ setOrgProfile }: { setOrgProfile?: (p: Organization) => void }) {
+export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { setOrgProfile?: (p: Organization) => void, orgProfile?: Organization, user?: { name?: string; email?: string } | null }) {
   const [grants, setGrants] = useState<Grant[]>([])
   // fixed demo recipient per request
   const [recipient] = useState('clarence7890gt@gmail.com')
 
-  // NPO question fields
-  const [orgName, setOrgName] = useState('Harmony Arts Centre')
-  const [orgSector, setOrgSector] = useState('Arts & Heritage')
-  const [mission, setMission] = useState('Arts education and community outreach — delivering accessible arts education, capacity-building for local artists, and community outreach that prioritises children and youth through workshops, school programmes, and public engagement.')
-  const [beneficiaries, setBeneficiaries] = useState('Children, youth, local communities')
-  const [annualBudget, setAnnualBudget] = useState('<$100k')
+  // NPO question fields — initialize empty, then populate from props or local storage
+  const [orgName, setOrgName] = useState('')
+  const [orgSector, setOrgSector] = useState<Organization['sector']>('Social Service')
+  const [mission, setMission] = useState('')
+  const [beneficiaries, setBeneficiaries] = useState('')
+  const [annualBudget, setAnnualBudget] = useState('')
 
   const [sending, setSending] = useState(false)
   const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null)
@@ -43,6 +44,51 @@ export default function AdminDashboard({ setOrgProfile }: { setOrgProfile?: (p: 
       setAiSuggestion(aiProfile.suggestion || null)
     }
   }, [aiProfile])
+
+  // Populate fields from provided orgProfile prop or from locally stored user profile
+  useEffect(() => {
+    // prefer explicit orgProfile prop
+    if (orgProfile) {
+      setOrgName(orgProfile.name || '')
+      setOrgSector(orgProfile.sector || 'Social Service')
+      setMission(orgProfile.mission || '')
+      // beneficiaries & budget may not be part of Organization type; try to read from localStorage/user
+      const usersRaw = localStorage.getItem('granted_users')
+      if (usersRaw && user?.email) {
+        try {
+          const users = JSON.parse(usersRaw)
+          const entry = users[user.email]
+          if (entry?.profile) {
+            setBeneficiaries((entry.profile.beneficiaries || []).join(', '))
+            if (entry.profile.budget) setAnnualBudget(String(entry.profile.budget))
+          }
+        } catch {
+          // ignore parse errors
+        }
+      }
+      return
+    }
+
+    // fallback: if a logged-in user exists, try load their saved profile from localStorage
+    if (user?.email) {
+      const usersRaw = localStorage.getItem('granted_users')
+      if (usersRaw) {
+        try {
+          const users = JSON.parse(usersRaw)
+          const entry = users[user.email]
+          if (entry?.profile) {
+            setOrgName(entry.profile.name || '')
+            setOrgSector(entry.profile.sector || 'Social Service')
+            setMission(entry.profile.mission || entry.profile.description || '')
+            setBeneficiaries((entry.profile.beneficiaries || []).join(', '))
+            if (entry.profile.budget) setAnnualBudget(String(entry.profile.budget))
+          }
+        } catch {
+          // ignore
+        }
+      }
+    }
+  }, [orgProfile, user])
 
   // Auto-dismiss notifications after a short duration
   useEffect(() => {
@@ -107,17 +153,56 @@ export default function AdminDashboard({ setOrgProfile }: { setOrgProfile?: (p: 
     }
   }
 
-  const handleUpdateProfile = () => {
-    if (setOrgProfile) {
-      setOrgProfile({
-        uen: 'T0000000X',
-        name: orgName,
-        sector: orgSector,
-        mission,
+  const handleUpdateProfile = async () => {
+    const body = {
+      name: orgName,
+      sector: orgSector,
+      description: mission,
+      beneficiaries: beneficiaries.split(',').map(s => s.trim()).filter(Boolean),
+      budget: (() => {
+        // Try to extract a number from the annualBudget input (which may be a range or string)
+        const digits = annualBudget.replace(/[^0-9.]/g, '')
+        const n = Number(digits)
+        return Number.isFinite(n) && n > 0 ? n : 0
+      })(),
+    }
+
+    const token = localStorage.getItem('granted_token')
+    if (!token) {
+      // No token: fall back to local/demo update
+      if (setOrgProfile) {
+        setOrgProfile({ uen: 'T0000000X', name: orgName, sector: orgSector, mission })
+        setNotification({ type: 'success', message: 'Profile updated locally (no auth token).' })
+      } else {
+        setNotification({ type: 'error', message: 'No profile updater provided.' })
+      }
+      return
+    }
+
+    try {
+      const res = await fetch('https://update-npo-kun7hshp7q-as.a.run.app', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
       })
-      setNotification({ type: 'success', message: 'Organization profile updated for demo matching.' })
-    } else {
-      setNotification({ type: 'error', message: 'No profile updater provided.' })
+
+      if (!res.ok) {
+        const txt = await res.text()
+        setNotification({ type: 'error', message: `Update failed: ${res.status} ${txt}` })
+        return
+      }
+
+      const data = await res.json()
+      // Apply server response to app state if possible
+      if (setOrgProfile) {
+        setOrgProfile({ uen: (data.uen as string) || 'T0000000X', name: data.name || orgName, sector: data.sector || orgSector, mission: data.description || mission })
+      }
+      setNotification({ type: 'success', message: 'Organization profile updated on server.' })
+    } catch (err: any) {
+      setNotification({ type: 'error', message: 'Update request failed: ' + (err?.message || String(err)) })
     }
   }
 
@@ -165,7 +250,7 @@ export default function AdminDashboard({ setOrgProfile }: { setOrgProfile?: (p: 
           </div>
           <div>
             <label className="text-xs font-semibold">Sector</label>
-            <input value={orgSector} onChange={e=>setOrgSector(e.target.value)} className="p-2 border rounded w-full" />
+            <input value={orgSector} onChange={e=>setOrgSector(e.target.value as Sector)} className="p-2 border rounded w-full" />
           </div>
           <div>
             <label className="text-xs font-semibold">Annual Budget</label>

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { ReactNode, Dispatch, SetStateAction } from 'react'
 import Navbar from './Navbar'
 import GrantAssistant from '../features/chat/GrantAssistant'
 import type { Organization } from '../../types'
@@ -10,7 +10,7 @@ interface MainLayoutProps {
     orgProfile: Organization
     setOrgProfile: (profile: Organization) => void
     isAuthenticated?: boolean
-    setIsAuthenticated?: (b: boolean) => void
+    setIsAuthenticated?: Dispatch<SetStateAction<boolean>>
     user?: { name?: string; email?: string } | null
     setUser?: (u: any) => void
 }
