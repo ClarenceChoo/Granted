@@ -20,7 +20,8 @@ logger.setLevel(logging.INFO)
     schedule="0 6 * * *",  # Run at 6:00 AM every day (UTC)
     timezone=scheduler_fn.Timezone("Asia/Singapore"),  # Singapore timezone
     memory=512,  # MB - AI inference may need more memory
-    timeout_sec=540  # 9 minutes - batch processing may take time
+    timeout_sec=540,  # 9 minutes - batch processing may take time
+    secrets=["OPENAI_API_KEY"]
 )
 def match_grants_daily(event: scheduler_fn.ScheduledEvent) -> None:
     """

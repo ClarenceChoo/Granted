@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-@https_fn.on_request()
+@https_fn.on_request(secrets=["OPENAI_API_KEY"])
 def match_grants_manual(req: https_fn.Request) -> https_fn.Response:
     """
     HTTP endpoint to manually trigger grant matching.
