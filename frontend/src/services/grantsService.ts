@@ -24,8 +24,6 @@ interface ApiResponse {
 
 import grantsData from '../assets/grants.json'
 
-const API_BASE_URL = '/api/v1'
-
 export async function fetchGrants(): Promise<Grant[]> {
     try {
         // Use local JSON data instead of API fetch
