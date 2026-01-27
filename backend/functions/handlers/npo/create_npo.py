@@ -6,6 +6,7 @@ import json
 import logging
 from firebase_functions import https_fn
 from firebase_admin import firestore, auth
+from google.cloud.firestore import SERVER_TIMESTAMP
 
 from .utils import get_cors_headers, validate_uen, validate_email
 
@@ -164,8 +165,8 @@ def create_npo(req: https_fn.Request) -> https_fn.Response:
             "beneficiaries": beneficiaries,
             "budget": budget,
             "saved_grants": [],  # Initialize empty saved grants list (max 5)
-            "created_at": firestore.SERVER_TIMESTAMP,
-            "updated_at": firestore.SERVER_TIMESTAMP
+            "created_at": SERVER_TIMESTAMP,
+            "updated_at": SERVER_TIMESTAMP
         }
         
         # Save to Firestore using user UID as document ID

@@ -6,6 +6,7 @@ import json
 import logging
 from firebase_functions import https_fn
 from firebase_admin import firestore
+from google.cloud.firestore import SERVER_TIMESTAMP
 
 from .utils import get_cors_headers, verify_auth_token
 
@@ -109,7 +110,7 @@ def unsave_grant(req: https_fn.Request) -> https_fn.Response:
         # Remove grant from saved list using arrayRemove for atomic operation
         npo_ref.update({
             "saved_grants": firestore.ArrayRemove([grant_id]),
-            "updated_at": firestore.SERVER_TIMESTAMP
+            "updated_at": SERVER_TIMESTAMP
         })
         
         # Get updated list
