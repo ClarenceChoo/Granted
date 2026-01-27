@@ -11,4 +11,5 @@ dependencies = [
     "resend>=0.10.0",
     "pydantic[email]>=2.0.0",
     "python-dotenv>=1.0.0",
+    "openai>=2.15.0",
 ]
