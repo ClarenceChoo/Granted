@@ -53,7 +53,6 @@ export default function MainLayout({ children, chatOpen, setChatOpen, orgProfile
             <GrantAssistant
                 isOpen={chatOpen}
                 onClose={() => setChatOpen(false)}
-                setChatOpen={setChatOpen}
                 currentProfile={orgProfile}
                 onProfileUpdate={setOrgProfile}
             />

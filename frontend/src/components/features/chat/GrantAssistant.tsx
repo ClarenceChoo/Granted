@@ -6,14 +6,13 @@ import type { Organization, Sector } from '../../../types'
 interface GrantAssistantProps {
     isOpen: boolean
     onClose: () => void
-    setChatOpen?: (b: boolean) => void
     onProfileUpdate: (profile: Organization) => void
     currentProfile: Organization
 }
 
 type Step = 'uen' | 'sector' | 'mission' | 'ai_mission' | 'beneficiaries' | 'budget' | 'complete'
 
-export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, currentProfile, setChatOpen }: GrantAssistantProps) {
+export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, currentProfile }: GrantAssistantProps) {
     const navigate = useNavigate()
     const [onboardingStep, setOnboardingStep] = useState<Step>('uen')
 
@@ -46,18 +45,9 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
         }
     }, [isOpen])
 
-    // If the chat is closed unexpectedly while onboarding, reopen it to avoid losing progress
-    useEffect(() => {
-        console.debug('GrantAssistant:isOpen changed', { isOpen, onboardingStep })
-        if (!isOpen && onboardingStep !== 'complete') {
-            console.debug('GrantAssistant: was closed during onboarding — reopening')
-            // try to reopen the chat via parent setter if available
-            if (typeof setChatOpen === 'function') {
-                // small delay to allow whatever triggered the close to settle
-                setTimeout(() => setChatOpen(true), 50)
-            }
-        }
-    }, [isOpen, onboardingStep])
+    // Note: previously the assistant attempted to auto-reopen if closed during onboarding.
+    // That behavior prevented users from closing the chat. We no longer auto-reopen;
+    // closing always respects the parent's `onClose` callback.
 
     const createAISuggestion = (profile: Organization & Partial<{ beneficiaries?: string | string[]; annualBudget?: string | number }>) => {
         const mission = profile.mission || ''
