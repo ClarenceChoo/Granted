@@ -72,14 +72,7 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
         }
     }
 
-    const refineMissionText = (mission: string, sector?: string) => {
-        // lightweight deterministic refinement to simulate AI polish
-        if (!mission) return 'Support accessible arts education and community outreach programmes that engage children and youth through participatory workshops, school partnerships, and public showcases.'
-        if (sector?.toLowerCase().includes('arts')) {
-            return `${mission} — delivering accessible arts education, capacity-building for local artists, and community outreach that prioritises children and youth through workshops, school programmes, and public engagement.`
-        }
-        return `${mission} — focused on community impact through targeted programmes and partnerships that build capacity and reach local beneficiaries.`
-    }
+    // refineMissionText removed — AI refinement is handled by `fetchAiRefinement` and `createAISuggestion`.
 
     const fetchAiRefinement = async (mission: string, sector: string = 'Social Service') => {
         setIsRefining(true)

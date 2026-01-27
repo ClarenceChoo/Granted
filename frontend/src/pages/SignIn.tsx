@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react'
-import { useState } from 'react'
 import { signInWithCustomToken } from 'firebase/auth'
 import { auth } from '../firebase'
 import { useLocation, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Mail, Lock, Building2, User, ChevronRight, Wand2, Sparkles, Loader2 } from 'lucide-react'
+import { ArrowLeft, Mail, Lock, Building2, User, ChevronRight, Wand2, Sparkles } from 'lucide-react'
 import type { Organization } from '../types'
 
 export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: any) => void }) {
@@ -30,7 +29,6 @@ export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: an
     })
 
     const [showAiOverlay, setShowAiOverlay] = useState(false)
-    const [isStreaming, setIsStreaming] = useState(false)
 
     // AI Auto-fill Simulation sequence
     useEffect(() => {
@@ -40,7 +38,6 @@ export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: an
             // 1. Show Overlay for 2s
             const timer = setTimeout(async () => {
                 setShowAiOverlay(false)
-                setIsStreaming(true)
 
                 // 2. Stream Name
                 if (effectivePrefill.name) {
@@ -57,7 +54,7 @@ export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: an
                     await streamText('mission', effectivePrefill.mission)
                 }
 
-                setIsStreaming(false)
+                
             }, 2000)
             return () => clearTimeout(timer)
         }
@@ -170,11 +167,8 @@ export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: an
             return
         }
 
-        onAuthSuccess?.(profile)
-        // small delay to show success state if we wanted, but alert is fine for now
-        alert(`Successfully ${mode === 'login' ? 'Logged In' : 'Registered'}!`)
-        navigate('/')
         alert('No local account found for this email. Please register first, or provide a server-side sign-in API.')
+        return
     }
 
     // Dynamic class for pre-filled fields to give them a "glow"
