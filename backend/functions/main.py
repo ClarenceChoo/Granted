@@ -23,6 +23,6 @@ initialize_app()
 # Import handlers
 from handlers.healthcheck import healthcheck
 from handlers.sync_grants import sync_grants_daily, sync_grants_manual
-from handlers.npo import create_npo, update_npo
+from handlers.npo import create_npo, update_npo, get_npo
 from handlers.saved_grants import save_grant, unsave_grant, get_saved_grants  # Package import
 from handlers.send_email import send_hello_world_email
