@@ -84,29 +84,33 @@ def get_saved_grants(req: https_fn.Request) -> https_fn.Response:
         npo_data = npo_doc.to_dict()
         saved_grant_ids = npo_data.get("saved_grants", [])
         
-        # Fetch full details for each saved grant
+        # Fetch full details for all saved grants in a single batch call
+        # This is more efficient than N sequential calls
         grants = []
         grants_to_remove = []  # Track grants that no longer exist
         
-        for grant_id in saved_grant_ids:
-            grant_ref = db.collection("grants").document(grant_id)
-            grant_doc = grant_ref.get()
+        if saved_grant_ids:
+            # Create references for all grants
+            grant_refs = [db.collection("grants").document(gid) for gid in saved_grant_ids]
             
-            if grant_doc.exists:
-                grant_data = grant_doc.to_dict()
-                grant_data["id"] = grant_id
-                grants.append(grant_data)
-            else:
-                # Grant no longer exists, mark for removal
-                grants_to_remove.append(grant_id)
-                logger.warning(f"Grant {grant_id} no longer exists, removing from saved list")
+            # Batch fetch all grants in a single round-trip
+            grant_docs = db.get_all(grant_refs)
+            
+            for grant_doc in grant_docs:
+                if grant_doc.exists:
+                    grant_data = grant_doc.to_dict()
+                    grant_data["id"] = grant_doc.id
+                    grants.append(grant_data)
+                else:
+                    # Grant no longer exists, mark for removal
+                    grants_to_remove.append(grant_doc.id)
+                    logger.warning(f"Grant {grant_doc.id} no longer exists, removing from saved list")
         
-        # Clean up any grants that no longer exist
+        # Clean up any grants that no longer exist (batch the removals)
         if grants_to_remove:
-            for grant_id in grants_to_remove:
-                npo_ref.update({
-                    "saved_grants": firestore.ArrayRemove([grant_id])
-                })
+            npo_ref.update({
+                "saved_grants": firestore.ArrayRemove(grants_to_remove)
+            })
         
         logger.info(f"Retrieved {len(grants)} saved grants for NPO {npo_id}")
         
