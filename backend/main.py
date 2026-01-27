@@ -182,6 +182,172 @@ async def send_grant_email(request: SendGrantEmailRequest):
         raise HTTPException(status_code=500, detail=f"Email sending failed: {str(e)}")
 
 
+# Gemini Integration
+import google.generativeai as genai
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
+
+class ChatRefineRequest(BaseModel):
+    mission: str
+    sector: str
+
+class ChatRefineResponse(BaseModel):
+    refinedMission: str
+    suggestions: dict
+
+@app.post("/api/chat-refine", response_model=ChatRefineResponse)
+async def chat_refine(request: ChatRefineRequest):
+    """
+    Uses Gemini to refine the mission statement and generate suggestions.
+    """
+    if not GEMINI_API_KEY:
+        # Fallback to mock if no key
+        return ChatRefineResponse(
+            refinedMission=f"{request.mission} (AI Enhancement Unavailable - No Key)",
+            suggestions={
+                "headline": "AI Suggestion Unavailable",
+                "blurb": "Please configure GEMINI_API_KEY in backend/.env to see real AI suggestions.",
+                "suggestedMission": request.mission
+            }
+        )
+
+    try:
+        model = genai.GenerativeModel('gemini-2.5-flash-lite')
+        
+        prompt = f"""
+        Act as a professional grant writer for a Singapore non-profit in the '{request.sector}' sector.
+        
+        The user has provided this rough mission statement: "{request.mission}"
+        
+        Task 1: Rewrite this mission statement to be more professional, impactful, and grant-ready. Keep it under 50 words.
+        
+        Task 2: Suggest a personalized "Grant Opportunity Strategy" blurb (2-3 sentences) explaining what kind of grants they should target.
+        
+        Return the output purely as a JSON object with this structure:
+        {{
+            "refined_mission": "...",
+            "strategy_blurb": "..."
+        }}
+        Do not include markdown formatting like ```json. Just the raw JSON string.
+        """
+        
+        response = model.generate_content(prompt)
+        # Simple cleanup if the model adds backticks
+        cleaned_text = response.text.replace("```json", "").replace("```", "").strip()
+        
+        import json
+        data = json.loads(cleaned_text)
+        
+        return ChatRefineResponse(
+            refinedMission=data.get("refined_mission", request.mission),
+            suggestions={
+                "headline": f"AI Strategy for {request.sector}",
+                "blurb": data.get("strategy_blurb", "Focus on community impact and sustainable growth."),
+                "suggestedMission": data.get("refined_mission", request.mission)
+            }
+        )
+        
+    except Exception as e:
+        print(f"Gemini API Error: {e}")
+        # Fallback on error
+        return ChatRefineResponse(
+            refinedMission=request.mission,
+            suggestions={
+                "headline": "AI Service Temporarily Unavailable",
+                "blurb": "We couldn't generate a custom strategy right now, but your mission has been saved.",
+                "suggestedMission": request.mission
+            }
+        )
+
+
+# Free-form AI Chat Endpoint
+class ChatMessage(BaseModel):
+    role: str  # 'user' or 'assistant'
+    content: str
+
+class ChatRequest(BaseModel):
+    message: str
+    history: list[ChatMessage] = []
+    context: Optional[dict] = None  # Organization profile context
+
+class ChatResponse(BaseModel):
+    response: str
+    success: bool
+
+@app.post("/api/chat", response_model=ChatResponse)
+async def chat(request: ChatRequest):
+    """
+    Free-form AI chat endpoint for grant-related questions.
+    """
+    if not GEMINI_API_KEY:
+        return ChatResponse(
+            response="AI chat is not available. Please configure GEMINI_API_KEY.",
+            success=False
+        )
+
+    try:
+        model = genai.GenerativeModel('gemini-2.5-flash-lite')
+        
+        # Build context from organization profile
+        org_context = ""
+        if request.context:
+            org_context = f"""
+            The user is from an organization with the following profile:
+            - Name: {request.context.get('name', 'Unknown')}
+            - Sector: {request.context.get('sector', 'Unknown')}
+            - Mission: {request.context.get('mission', 'Not specified')}
+            - UEN: {request.context.get('uen', 'Not specified')}
+            """
+        
+        # Build conversation history
+        history_text = ""
+        for msg in request.history[-10:]:  # Keep last 10 messages for context
+            role = "User" if msg.role == "user" else "Assistant"
+            history_text += f"{role}: {msg.content}\n"
+        
+        system_prompt = f"""You are a helpful AI assistant specializing in Singapore grants and funding for non-profit organizations (NPOs), charities, and social enterprises.
+
+Your knowledge includes:
+- Singapore government grants (NAC, Tote Board, MCCY, MSF, etc.)
+- Grant application best practices
+- Eligibility requirements for various grants
+- Tips for writing successful grant applications
+- Funding landscape in Singapore for the social sector
+
+{org_context}
+
+Guidelines:
+- Be helpful, concise, and accurate
+- If you don't know something specific, say so and suggest where they might find the information
+- Provide actionable advice when possible
+- Keep responses under 200 words unless more detail is needed
+- Use bullet points for lists
+- Be encouraging and supportive
+
+Previous conversation:
+{history_text}
+
+User's current message: {request.message}
+
+Respond helpfully:"""
+
+        response = model.generate_content(system_prompt)
+        
+        return ChatResponse(
+            response=response.text,
+            success=True
+        )
+        
+    except Exception as e:
+        print(f"Chat API Error: {e}")
+        return ChatResponse(
+            response="I'm having trouble connecting right now. Please try again in a moment.",
+            success=False
+        )
+
+
 def main():
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

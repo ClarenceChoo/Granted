@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { MessageCircle, X, Building2, ArrowRight } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { MessageCircle, X, Building2, ArrowRight, Sparkles, Send } from 'lucide-react'
 import type { Organization, Sector } from '../../../types'
 
 interface GrantAssistantProps {
@@ -11,7 +11,12 @@ interface GrantAssistantProps {
     currentProfile: Organization
 }
 
-type Step = 'uen' | 'sector' | 'mission' | 'ai_mission' | 'beneficiaries' | 'budget' | 'complete'
+type Step = 'uen' | 'sector' | 'mission' | 'ai_mission' | 'beneficiaries' | 'budget' | 'complete' | 'chat'
+
+interface ChatMessage {
+    role: 'user' | 'assistant'
+    content: string
+}
 
 export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, currentProfile }: GrantAssistantProps) {
     const navigate = useNavigate()
@@ -34,6 +39,13 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
     const [beneficiariesLocal, setBeneficiariesLocal] = useState(currentProfile.beneficiaries || 'Children, youth, local communities')
     const [budgetLocal, setBudgetLocal] = useState(currentProfile.annualBudget || '<$100k')
     const [isTyping, setIsTyping] = useState(false)
+    const [isRefining, setIsRefining] = useState(false)
+    const [aiSuggestion, setAiSuggestion] = useState<any>(null)
+
+    // Free-form chat state
+    const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
+    const [chatInput, setChatInput] = useState('')
+    const [isChatLoading, setIsChatLoading] = useState(false)
 
     // Initialize local inputs when the chat is opened to avoid clobbering while user types
     useEffect(() => {
@@ -81,6 +93,77 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
         return `${mission} — focused on community impact through targeted programmes and partnerships that build capacity and reach local beneficiaries.`
     }
 
+    const fetchAiRefinement = async (mission: string, sector: string = 'Social Service') => {
+        setIsRefining(true)
+        try {
+            const response = await fetch('http://localhost:8000/api/chat-refine', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mission, sector }),
+            })
+            const data = await response.json()
+            setAiSuggestion(data)
+            return data
+        } catch (error) {
+            console.error('Failed to fetch AI refinement:', error)
+            // Fallback
+            setAiSuggestion({
+                refinedMission: mission,
+                suggestions: {
+                    headline: "AI Suggestion Unavailable",
+                    blurb: "We couldn't reach the AI service, but we've saved your mission.",
+                    suggestedMission: mission
+                }
+            })
+        } finally {
+            setIsRefining(false)
+        }
+    }
+
+    // Free-form AI chat function
+    const sendChatMessage = async (message: string) => {
+        if (!message.trim() || isChatLoading) return
+
+        // Add user message to chat
+        const userMessage: ChatMessage = { role: 'user', content: message }
+        setChatMessages(prev => [...prev, userMessage])
+        setChatInput('')
+        setIsChatLoading(true)
+
+        try {
+            const response = await fetch('http://localhost:8000/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message,
+                    history: chatMessages,
+                    context: {
+                        name: localProfile.name,
+                        sector: localProfile.sector,
+                        mission: localProfile.mission,
+                        uen: localProfile.uen,
+                    }
+                }),
+            })
+            const data = await response.json()
+
+            const assistantMessage: ChatMessage = {
+                role: 'assistant',
+                content: data.response || "I couldn't process that. Please try again."
+            }
+            setChatMessages(prev => [...prev, assistantMessage])
+        } catch (error) {
+            console.error('Chat error:', error)
+            const errorMessage: ChatMessage = {
+                role: 'assistant',
+                content: "Sorry, I'm having trouble connecting. Please try again."
+            }
+            setChatMessages(prev => [...prev, errorMessage])
+        } finally {
+            setIsChatLoading(false)
+        }
+    }
+
     const handleOnboardingSubmit = (val: string) => {
         setIsTyping(true)
         console.debug('GrantAssistant.handleOnboardingSubmit', { step: onboardingStep, val, localProfile, beneficiariesLocal, budgetLocal })
@@ -100,8 +183,11 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
             updatedProfile = { ...updatedProfile, mission: val }
             setLocalProfile(updatedProfile)
             onProfileUpdate(updatedProfile)
-            // Insert an AI refinement step before moving to beneficiaries
+
+            // Trigger AI Refinement
+            fetchAiRefinement(val, updatedProfile.sector || 'Social Service')
             setOnboardingStep('ai_mission')
+            setIsTyping(false)
         } else if (onboardingStep === 'beneficiaries') {
             setBeneficiariesLocal(val)
             setOnboardingStep('budget')
@@ -121,7 +207,7 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
                 mission: updatedProfile.mission || val,
                 beneficiaries: beneficiariesLocal,
                 annualBudget: budgetLocal,
-                suggestion: createAISuggestion({
+                suggestion: aiSuggestion?.suggestions || createAISuggestion({
                     ...updatedProfile,
                     beneficiaries: beneficiariesLocal,
                     annualBudget: budgetLocal,
@@ -151,7 +237,7 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
 
     useEffect(() => {
         scrollToBottom()
-    }, [onboardingStep, isTyping, beneficiariesLocal, budgetLocal])
+    }, [onboardingStep, isTyping, beneficiariesLocal, budgetLocal, chatMessages, isChatLoading])
 
     return (
         <>
@@ -281,31 +367,38 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
                                     <div className="bg-white p-4 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 text-slate-700 leading-relaxed">
                                         <p>Here’s an AI-polished version of your mission. You can accept it or keep your original.</p>
                                     </div>
-                                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-50 text-slate-800">
-                                        <p className="font-medium">{refineMissionText(localProfile.mission, localProfile.sector)}</p>
-                                        <div className="flex gap-2 mt-3">
-                                            <button
-                                                onClick={() => {
-                                                    const suggested = refineMissionText(localProfile.mission, localProfile.sector)
-                                                    const updated = { ...localProfile, mission: suggested }
-                                                    setLocalProfile(updated)
-                                                    onProfileUpdate(updated)
-                                                    setOnboardingStep('beneficiaries')
-                                                }}
-                                                className="text-sm bg-[#0F766E] text-white px-3 py-2 rounded-lg"
-                                            >
-                                                Use AI suggestion
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    setOnboardingStep('beneficiaries')
-                                                }}
-                                                className="text-sm bg-white border border-slate-200 px-3 py-2 rounded-lg"
-                                            >
-                                                Keep my version
-                                            </button>
+
+                                    {isRefining ? (
+                                        <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-50 text-slate-500 italic animate-pulse">
+                                            Generating intelligent suggestions...
                                         </div>
-                                    </div>
+                                    ) : (
+                                        <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-50 text-slate-800">
+                                            <p className="font-medium">{aiSuggestion?.refinedMission || localProfile.mission}</p>
+                                            <div className="flex gap-2 mt-3">
+                                                <button
+                                                    onClick={() => {
+                                                        const suggested = aiSuggestion?.refinedMission || localProfile.mission
+                                                        const updated = { ...localProfile, mission: suggested }
+                                                        setLocalProfile(updated)
+                                                        onProfileUpdate(updated)
+                                                        setOnboardingStep('beneficiaries')
+                                                    }}
+                                                    className="text-sm bg-[#0F766E] text-white px-3 py-2 rounded-lg"
+                                                >
+                                                    Use AI suggestion
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        setOnboardingStep('beneficiaries')
+                                                    }}
+                                                    className="text-sm bg-white border border-slate-200 px-3 py-2 rounded-lg"
+                                                >
+                                                    Keep my version
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -368,23 +461,93 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
                                 </div>
                                 <div className="space-y-2 max-w-[85%]">
                                     <div className="bg-white p-4 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 text-slate-700 leading-relaxed">
-                                        <p>Thank you! Your matches have been updated.</p>
+                                        <p>Thank you! Your matches have been updated. What would you like to do next?</p>
+                                        <button
+                                            onClick={() => setOnboardingStep('chat')}
+                                            className="mt-3 w-full bg-gradient-to-r from-[#1E3A8A] to-[#0F766E] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90 transition flex items-center justify-center gap-2"
+                                        >
+                                            <Sparkles className="w-4 h-4" />
+                                            Ask me anything about grants
+                                        </button>
                                         <button
                                             onClick={onClose}
-                                            className="mt-3 w-full bg-[#0F766E] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-[#0d6963] transition"
+                                            className="mt-2 w-full bg-[#0F766E] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-[#0d6963] transition"
                                         >
                                             View Matches
                                         </button>
-                                        <Link
-                                            to="/signin"
-                                            state={localProfile}
+                                        <button
+                                            onClick={() => {
+                                                onClose()
+                                                navigate('/signin', { state: localProfile })
+                                            }}
                                             className="mt-2 w-full block text-center bg-white border border-[#1E3A8A]/20 text-[#1E3A8A] px-4 py-2 rounded-lg text-sm font-semibold hover:bg-[#1E3A8A]/5 transition"
                                         >
                                             Create Account with these details
-                                        </Link>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
+                        )}
+
+                        {/* Chat Mode */}
+                        {onboardingStep === 'chat' && (
+                            <>
+                                {/* Welcome to chat message */}
+                                {chatMessages.length === 0 && (
+                                    <div className="flex gap-4 animate-slide-up">
+                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1E3A8A] to-[#0F766E] flex items-center justify-center flex-shrink-0 shadow-sm mt-1">
+                                            <Sparkles className="w-4 h-4 text-white" />
+                                        </div>
+                                        <div className="space-y-2 max-w-[85%]">
+                                            <div className="bg-white p-4 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 text-slate-700 leading-relaxed">
+                                                <p className="font-medium">I'm your AI Grant Assistant! 🎉</p>
+                                                <p className="mt-2 text-sm text-slate-600">Ask me anything about:</p>
+                                                <ul className="mt-2 text-sm text-slate-600 list-disc list-inside space-y-1">
+                                                    <li>Singapore grant opportunities</li>
+                                                    <li>Eligibility requirements</li>
+                                                    <li>Application tips</li>
+                                                    <li>Writing grant proposals</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Chat Messages */}
+                                {chatMessages.map((msg, idx) => (
+                                    <div key={idx} className={`flex gap-4 animate-slide-up ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                                        {msg.role === 'assistant' && (
+                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1E3A8A] to-[#0F766E] flex items-center justify-center flex-shrink-0 shadow-sm mt-1">
+                                                <Sparkles className="w-4 h-4 text-white" />
+                                            </div>
+                                        )}
+                                        <div className="space-y-2 max-w-[85%]">
+                                            <div className={`p-4 rounded-2xl shadow-sm leading-relaxed whitespace-pre-wrap ${msg.role === 'user'
+                                                    ? 'bg-[#0F766E] text-white rounded-tr-none'
+                                                    : 'bg-white border border-slate-100 text-slate-700 rounded-tl-none'
+                                                }`}>
+                                                <p>{msg.content}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+
+                                {/* Chat Loading Indicator */}
+                                {isChatLoading && (
+                                    <div className="flex gap-4 animate-slide-up">
+                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1E3A8A] to-[#0F766E] flex items-center justify-center flex-shrink-0 shadow-sm mt-1">
+                                            <Sparkles className="w-4 h-4 text-white" />
+                                        </div>
+                                        <div className="bg-white p-4 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 text-slate-500">
+                                            <div className="flex gap-1 h-6 items-center">
+                                                <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                                                <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                                                <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </>
                         )}
 
                         {/* Typing Indicator */}
@@ -410,31 +573,42 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
                         <div className="relative">
                             <input
                                 type="text"
+                                value={onboardingStep === 'chat' ? chatInput : undefined}
+                                onChange={onboardingStep === 'chat' ? (e) => setChatInput(e.target.value) : undefined}
                                 placeholder={
-                                    onboardingStep === 'uen' ? "Enter UEN (e.g., T08GB0021K)" :
-                                        onboardingStep === 'ai_mission' ? 'AI-suggested mission (editable)' :
-                                            onboardingStep === 'beneficiaries' ? 'Primary beneficiaries (comma separated)' :
-                                                onboardingStep === 'budget' ? 'Annual budget (e.g., <$100k)' : 'Type your message...'
+                                    onboardingStep === 'chat' ? "Ask me about grants..." :
+                                        onboardingStep === 'uen' ? "Enter UEN (e.g., T08GB0021K)" :
+                                            onboardingStep === 'ai_mission' ? 'AI-suggested mission (editable)' :
+                                                onboardingStep === 'beneficiaries' ? 'Primary beneficiaries (comma separated)' :
+                                                    onboardingStep === 'budget' ? 'Annual budget (e.g., <$100k)' : 'Type your message...'
                                 }
-                                disabled={onboardingStep === 'complete' || onboardingStep === 'sector'}
+                                disabled={onboardingStep === 'complete' || onboardingStep === 'sector' || isChatLoading}
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
-                                        handleOnboardingSubmit(e.currentTarget.value);
-                                        e.currentTarget.value = '';
+                                        if (onboardingStep === 'chat') {
+                                            sendChatMessage(chatInput);
+                                        } else {
+                                            handleOnboardingSubmit(e.currentTarget.value);
+                                            e.currentTarget.value = '';
+                                        }
                                     }
                                 }}
                                 className="w-full pl-4 pr-14 py-4 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] focus:border-transparent transition shadow-sm placeholder:text-slate-400 disabled:opacity-50 disabled:bg-slate-50"
                             />
                             <button
                                 onClick={(e) => {
-                                    const input = e.currentTarget.previousElementSibling as HTMLInputElement;
-                                    handleOnboardingSubmit(input.value);
-                                    input.value = '';
+                                    if (onboardingStep === 'chat') {
+                                        sendChatMessage(chatInput);
+                                    } else {
+                                        const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                                        handleOnboardingSubmit(input.value);
+                                        input.value = '';
+                                    }
                                 }}
-                                disabled={onboardingStep === 'complete' || onboardingStep === 'sector'}
+                                disabled={onboardingStep === 'complete' || onboardingStep === 'sector' || isChatLoading}
                                 className="absolute right-2 top-2 bottom-2 aspect-square bg-[#0F766E] text-white rounded-lg hover:bg-[#0d6963] transition flex items-center justify-center disabled:opacity-50"
                             >
-                                <ArrowRight className="w-5 h-5" />
+                                {onboardingStep === 'chat' ? <Send className="w-5 h-5" /> : <ArrowRight className="w-5 h-5" />}
                             </button>
                         </div>
                     </div>
