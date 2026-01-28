@@ -484,6 +484,18 @@ def match_all_npos(
     
     for npo_data in npos:
         npo_id = npo_data.get("uid")
+        if not isinstance(npo_id, str) or not npo_id:
+            logger.error(
+                f"[Matching] Invalid or missing NPO ID in data: {npo_data}",
+                extra={"npo_data": npo_data}
+            )
+            results["failed"] += 1
+            results["npo_results"].append({
+                "npo_id": npo_id,
+                "status": "failed",
+                "error": "Invalid or missing NPO ID"
+            })
+            continue
         
         try:
             # Run AI matching
