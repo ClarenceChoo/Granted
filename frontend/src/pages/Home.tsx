@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom'
 import type { Grant, Organization } from '../types'
 import GrantCard from '../components/features/grants/GrantCard'
 import GrantCardSkeleton from '../components/features/grants/GrantCardSkeleton'
-import EmailTester from '../components/features/email/EmailTester'
+import GrantsCarousel from '../components/features/grants/GrantsCarousel'
+import heroImage from '../assets/elderly picture 3.avif'
 
 interface HomeProps {
     matchedGrants: Grant[]
@@ -19,7 +20,10 @@ export default function Home({ matchedGrants, orgProfile, onOpenChat, isSubscrib
     return (
         <>
             {/* Hero Section */}
-            <section className="relative pt-20 pb-32 overflow-hidden">
+            <section
+                className="relative pt-20 pb-32 overflow-hidden bg-cover bg-center"
+                style={{ backgroundImage: `linear-gradient(rgba(255,255,255,0.6), rgba(255,255,255,0.6)), url(${heroImage})` }}
+            >
                 {/* Abstract Background Shapes */}
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-full -z-10 pointer-events-none">
                     <div className="absolute top-20 left-10 w-72 h-72 bg-[#1E3A8A]/20 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
@@ -54,7 +58,11 @@ export default function Home({ matchedGrants, orgProfile, onOpenChat, isSubscrib
                             View All Grants
                         </a>
                     </div>
-                </div>
+                    </div>
+                    {/* Grants organisations carousel */}
+                    <div className="w-full mt-12">
+                        <GrantsCarousel />
+                    </div>
             </section>
 
             {/* Top-K Grant Feed */}
@@ -87,12 +95,7 @@ export default function Home({ matchedGrants, orgProfile, onOpenChat, isSubscrib
                         </div>
                     </div>
 
-                    {/* Email Tester - Development Only */}
-                    {import.meta.env.DEV && (
-                        <div className="mb-12">
-                            <EmailTester orgProfile={orgProfile} />
-                        </div>
-                    )}
+                    {/* (EmailTester removed) */}
 
                     <div className="grid md:grid-cols-3 gap-8">
                         {isLoading ? (
