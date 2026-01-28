@@ -3,13 +3,19 @@
 @theme {
     --font-sans: "Inter", sans-serif;
     /* Community Compass Color Palette */
-    --color-primary: #1E3A8A; /* Deep Blue */
+    --color-primary: #1E3A8A;
+    /* Deep Blue */
     --color-primary-foreground: #ffffff;
-    --color-secondary: #0F766E; /* Teal */
-    --color-accent: #F59E0B; /* Amber */
-    --color-background: #F8FAFC; /* Off-white */
-    --color-text: #0F172A; /* Slate */
-    --color-border: #E2E8F0; /* Border */
+    --color-secondary: #0F766E;
+    /* Teal */
+    --color-accent: #F59E0B;
+    /* Amber */
+    --color-background: #F8FAFC;
+    /* Off-white */
+    --color-text: #0F172A;
+    /* Slate */
+    --color-border: #E2E8F0;
+    /* Border */
 }
 
 body {
@@ -62,4 +68,23 @@ body {
 
 .animation-delay-4000 {
     animation-delay: 4s;
+}
+
+/* Organisation logos scroll animation */
+@keyframes scroll {
+    0% {
+        transform: translateX(0);
+    }
+
+    100% {
+        transform: translateX(-50%);
+    }
+}
+
+.animate-scroll {
+    animation: scroll 30s linear infinite;
+}
+
+.animate-scroll:hover {
+    animation-play-state: paused;
 }

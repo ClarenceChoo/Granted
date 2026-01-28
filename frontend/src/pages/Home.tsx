@@ -19,13 +19,18 @@ export default function Home({ matchedGrants, orgProfile, onOpenChat, isSubscrib
     return (
         <>
             {/* Hero Section */}
-            <section className="relative pt-20 pb-32 overflow-hidden">
-                {/* Abstract Background Shapes */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-full -z-10 pointer-events-none">
-                    <div className="absolute top-20 left-10 w-72 h-72 bg-[#1E3A8A]/20 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
-                    <div className="absolute top-20 right-10 w-72 h-72 bg-[#0F766E]/20 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
-                    <div className="absolute bottom-20 left-1/2 -translate-x-1/2 w-72 h-72 bg-[#F59E0B]/20 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
+            <section className="relative pt-20 pb-32 overflow-hidden min-h-[70vh] flex items-center">
+                {/* Background Image */}
+                <div className="absolute inset-0 -z-20">
+                    <img
+                        src="/elderly-picture-1.jpg"
+                        alt="Elderly people of Singapore"
+                        className="w-full h-full object-cover"
+                    />
                 </div>
+
+                {/* Gradient Overlay */}
+                <div className="absolute inset-0 -z-10 bg-gradient-to-r from-white/95 via-white/85 to-white/70"></div>
 
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1E3A8A]/10 border border-[#1E3A8A]/20 text-[#1E3A8A] text-xs font-semibold uppercase tracking-wide mb-8 shadow-sm">
@@ -53,6 +58,42 @@ export default function Home({ matchedGrants, orgProfile, onOpenChat, isSubscrib
                         <a href="#grant-feed" className="px-8 py-4 rounded-xl bg-white text-[#0F172A] font-semibold border border-[#E2E8F0] shadow-sm hover:bg-slate-50 hover:border-slate-300 transition-all duration-300">
                             View All Grants
                         </a>
+                    </div>
+                </div>
+            </section>
+
+            {/* Organisation Logos Section */}
+            <section className="py-12 bg-white border-b border-slate-100">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <p className="text-center text-slate-500 text-sm font-medium mb-8">
+                        Fetches grants from these organisations
+                    </p>
+                    <div className="relative overflow-hidden">
+                        {/* Fade edges */}
+                        <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none"></div>
+                        <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none"></div>
+
+                        {/* Scrolling logos container */}
+                        <div className="flex animate-scroll gap-12 items-center">
+                            {/* First set of logos */}
+                            <img src="/organisation 1.svg" alt="Agency for Integrated Care" className="h-10 w-auto grayscale hover:grayscale-0 transition-all opacity-70 hover:opacity-100 flex-shrink-0" />
+                            <img src="/organisation 2.svg" alt="Community Development Council" className="h-10 w-auto grayscale hover:grayscale-0 transition-all opacity-70 hover:opacity-100 flex-shrink-0" />
+                            <img src="/organisation 3.svg" alt="CSR Singapore" className="h-10 w-auto grayscale hover:grayscale-0 transition-all opacity-70 hover:opacity-100 flex-shrink-0" />
+                            <img src="/organisation 4.svg" alt="Health Promotion Board" className="h-10 w-auto grayscale hover:grayscale-0 transition-all opacity-70 hover:opacity-100 flex-shrink-0" />
+                            <img src="/organisation 5.svg" alt="MCCY" className="h-10 w-auto grayscale hover:grayscale-0 transition-all opacity-70 hover:opacity-100 flex-shrink-0" />
+                            <img src="/organisation 6.svg" alt="Ministry of Manpower" className="h-10 w-auto grayscale hover:grayscale-0 transition-all opacity-70 hover:opacity-100 flex-shrink-0" />
+                            <img src="/organisation 7.svg" alt="Municipal Services Office" className="h-10 w-auto grayscale hover:grayscale-0 transition-all opacity-70 hover:opacity-100 flex-shrink-0" />
+                            <img src="/organisation 17.svg" alt="Toteboard" className="h-10 w-auto grayscale hover:grayscale-0 transition-all opacity-70 hover:opacity-100 flex-shrink-0" />
+                            {/* Duplicate set for seamless loop */}
+                            <img src="/organisation 1.svg" alt="Agency for Integrated Care" className="h-10 w-auto grayscale hover:grayscale-0 transition-all opacity-70 hover:opacity-100 flex-shrink-0" />
+                            <img src="/organisation 2.svg" alt="Community Development Council" className="h-10 w-auto grayscale hover:grayscale-0 transition-all opacity-70 hover:opacity-100 flex-shrink-0" />
+                            <img src="/organisation 3.svg" alt="CSR Singapore" className="h-10 w-auto grayscale hover:grayscale-0 transition-all opacity-70 hover:opacity-100 flex-shrink-0" />
+                            <img src="/organisation 4.svg" alt="Health Promotion Board" className="h-10 w-auto grayscale hover:grayscale-0 transition-all opacity-70 hover:opacity-100 flex-shrink-0" />
+                            <img src="/organisation 5.svg" alt="MCCY" className="h-10 w-auto grayscale hover:grayscale-0 transition-all opacity-70 hover:opacity-100 flex-shrink-0" />
+                            <img src="/organisation 6.svg" alt="Ministry of Manpower" className="h-10 w-auto grayscale hover:grayscale-0 transition-all opacity-70 hover:opacity-100 flex-shrink-0" />
+                            <img src="/organisation 7.svg" alt="Municipal Services Office" className="h-10 w-auto grayscale hover:grayscale-0 transition-all opacity-70 hover:opacity-100 flex-shrink-0" />
+                            <img src="/organisation 17.svg" alt="Toteboard" className="h-10 w-auto grayscale hover:grayscale-0 transition-all opacity-70 hover:opacity-100 flex-shrink-0" />
+                        </div>
                     </div>
                 </div>
             </section>

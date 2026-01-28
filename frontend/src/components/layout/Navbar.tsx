@@ -1,4 +1,4 @@
-import { Search, Bell } from 'lucide-react'
+import { Bell } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
 import { signOut as firebaseSignOut } from 'firebase/auth'
@@ -55,31 +55,31 @@ export default function Navbar({
     }, [])
 
     return (
-        <nav className="sticky top-0 z-40 bg-[#1E3A8A] shadow-md">
+        <nav className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm shadow-sm border-b border-slate-100">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center h-16">
                     <Link to="/" className="flex items-center gap-2">
-                        <div className="bg-white/20 p-1.5 rounded-lg">
-                            <Search className="w-5 h-5 text-white" />
+                        <div className="bg-[#0F766E] p-1.5 rounded-lg">
+                            <span className="text-white font-bold text-lg">G</span>
                         </div>
-                        <span className="text-xl font-bold tracking-tight text-white">Granted</span>
+                        <span className="text-xl font-bold tracking-tight text-slate-800">Granted</span>
                     </Link>
-                    <div className="hidden md:flex space-x-8 text-sm font-medium text-white/80">
-                        <Link to="/discover" className="hover:text-white transition-colors">Discover</Link>
-                        <Link to="/my-grants" className="hover:text-white transition-colors">My Grants</Link>
-                        <Link to="/resources" className="hover:text-white transition-colors">Resources</Link>
+                    <div className="hidden md:flex space-x-8 text-sm font-medium text-slate-600">
+                        <Link to="/discover" className="hover:text-[#0F766E] transition-colors">Discover</Link>
+                        <Link to="/my-grants" className="hover:text-[#0F766E] transition-colors">My Grants</Link>
+                        <Link to="/resources" className="hover:text-[#0F766E] transition-colors">Resources</Link>
                         {isAuthenticated && (
-                            <Link to="/admin" className="hover:text-white transition-colors">Admin</Link>
+                            <Link to="/admin" className="hover:text-[#0F766E] transition-colors">Admin</Link>
                         )}
                     </div>
                     <div className="flex items-center gap-3">
-                        <button className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-all">
+                        <button className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-all">
                             <Bell className="w-5 h-5" />
                         </button>
 
                         {isAuthenticated ? (
                             <div className="relative" ref={ref}>
-                                <button onClick={() => setOpen(o => !o)} title="Profile" className="bg-white/20 text-white w-10 h-10 rounded-full flex items-center justify-center font-semibold">
+                                <button onClick={() => setOpen(o => !o)} title="Profile" className="bg-[#0F766E] text-white w-10 h-10 rounded-full flex items-center justify-center font-semibold">
                                     {initials}
                                 </button>
 

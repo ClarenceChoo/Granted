@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { useState } from 'react'
 import { signInWithCustomToken } from 'firebase/auth'
 import { auth } from '../firebase'
 import { useLocation, Link, useNavigate } from 'react-router-dom'
