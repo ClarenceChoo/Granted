@@ -58,12 +58,13 @@ export default function Home({ matchedGrants, orgProfile, onOpenChat, isSubscrib
                             View All Grants
                         </a>
                     </div>
-                    </div>
+                </div>
             </section>
 
             {/* Grants organisations carousel - placed directly above the Top-K Grant Feed */}
-            <div className="w-full mt-6">
+            <div className="w-full py-8 bg-white border-t border-slate-100">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <p className="text-center text-slate-500 text-sm font-medium mb-6">Fetches grants from these organisations</p>
                     <GrantsCarousel />
                 </div>
             </div>
