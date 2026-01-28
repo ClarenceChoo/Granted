@@ -32,5 +32,6 @@ from handlers.matching import (
     match_grants_manual,    # HTTP trigger for manual matching
     match_grants_daily,     # CRON trigger for daily matching
     on_npo_change,          # Firestore trigger for NPO changes
-    on_grant_change         # Firestore trigger for Grant changes
+    on_grant_change,        # Firestore trigger for Grant changes
+    get_matches             # HTTP GET to retrieve NPO matches
 )
