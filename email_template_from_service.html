@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Granted — Top 3 Grant Matches (Template)</title>
+    <style>
+      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; margin:0; padding:0; background-color:#f3f4f6; }
+      a { color: #6b46c1; }
+      .container { max-width:600px; margin: 20px auto; background:#ffffff; border-radius:8px; overflow:hidden; box-shadow: 0 6px 18px rgba(15,23,42,0.08); }
+      .header { background-color:#6b46c1; color:#fff; text-align:center; padding:36px 20px; }
+      .header .title { font-size:24px; font-weight:700; }
+      .header .subtitle { font-size:14px; opacity:0.95; margin-top:6px; }
+      .content { padding:28px 20px; color:#374151; }
+      .lead { margin:0 0 18px 0; font-size:14px; color:#6b7280; line-height:1.5; }
+      .match-table { width:100%; border-collapse:collapse; margin-bottom:20px; border:1px solid #e5e7eb; border-radius:8px; overflow:hidden; }
+      .match-header { background:#6b46c1; color:#fff; padding:18px; display:flex; justify-content:space-between; align-items:center; }
+      .match-header .meta { font-size:12px; font-weight:600; text-transform:uppercase; opacity:0.95; margin-bottom:6px; }
+      .match-header .title { font-size:18px; font-weight:700; }
+      .match-score { background:rgba(255,255,255,0.12); padding:8px 12px; border-radius:6px; text-align:center; }
+      .match-score .percent { font-size:22px; font-weight:700; }
+      .match-body { padding:16px; }
+      .funding-agency { font-size:12px; color:#9ca3af; font-weight:600; text-transform:uppercase; margin-bottom:6px; }
+      .agency-name { font-size:15px; font-weight:600; color:#111827; margin-bottom:12px; }
+      .grant-desc { font-size:13px; color:#374151; line-height:1.5; margin-bottom:12px; }
+      .grant-meta { width:100%; margin-top:8px; }
+      .grant-meta td { font-size:12px; color:#9ca3af; font-weight:600; text-transform:uppercase; padding-bottom:6px; }
+      .grant-meta .amount { font-size:15px; color:#059669; font-weight:700; }
+      .grant-meta .deadline { font-size:15px; color:#dc2626; font-weight:700; text-align:right; }
+      .sectors { margin-top:12px; }
+      .sector-pill { display:inline-block; margin-right:6px; margin-bottom:6px; background:#eef2ff; color:#3730a3; padding:6px 10px; border-radius:6px; font-weight:600; font-size:12px; }
+      .btn { background-color:#6b46c1; color:#ffffff; padding:10px 16px; border-radius:6px; text-decoration:none; display:inline-block; font-weight:600; }
+      .why { margin-top:16px; background:#f0f9ff; border-left:4px solid #0369a1; border-radius:6px; padding:12px 14px; }
+      .footer { background:#f9fafb; padding:16px 20px; text-align:center; border-top:1px solid #e5e7eb; font-size:13px; color:#9ca3af; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="title">✨ Your Grant Matches</div>
+        <div class="subtitle">Personalized recommendations for %%ORGANIZATION_NAME%%</div>
+      </div>
+
+      <div class="content">
+        <p style="margin:0 0 12px 0; font-size:15px; color:#374151;">Hi,</p>
+        <p class="lead">We've analyzed our grant database and found the top 3 grants that match your organization's profile. These opportunities align with your sector (<strong>%%ORGANIZATION_SECTOR%%</strong>) and mission focus.</p>
+
+        <!-- Match #1 -->
+        <table class="match-table" role="presentation">
+          <tr>
+            <td class="match-header">
+              <div>
+                <div class="meta">Match #1</div>
+                <div class="title">Community Wellness Grant</div>
+              </div>
+              <div class="match-score">
+                <div class="percent">96%</div>
+                <div style="font-size:11px; font-weight:600; text-transform:uppercase; opacity:0.9;">Match Score</div>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td class="match-body">
+              <div class="funding-agency">Funding Agency</div>
+              <div class="agency-name">Healthy Cities Foundation</div>
+
+              <div class="grant-desc">Funding for community-led wellness initiatives focusing on elderly support and accessible health programs.</div>
+
+              <table class="grant-meta" role="presentation">
+                <tr>
+                  <td class="amount">$50,000</td>
+                  <td class="deadline" style="text-align:right;">2026-03-15</td>
+                </tr>
+              </table>
+
+              <div class="sectors">
+                <span class="sector-pill">Health</span>
+                <span class="sector-pill">Elderly Care</span>
+                <span class="sector-pill">Community</span>
+              </div>
+
+              <div style="margin-top:14px;">
+                <a class="btn" href="https://granted.app/grant/sample-1">View Full Details →</a>
+              </div>
+            </td>
+          </tr>
+        </table>
+
+        <!-- Match #2 -->
+        <table class="match-table" role="presentation">
+          <tr>
+            <td class="match-header">
+              <div>
+                <div class="meta">Match #2</div>
+                <div class="title">Senior Support Initiative</div>
+              </div>
+              <div class="match-score">
+                <div class="percent">90%</div>
+                <div style="font-size:11px; font-weight:600; text-transform:uppercase; opacity:0.9;">Match Score</div>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td class="match-body">
+              <div class="funding-agency">Funding Agency</div>
+              <div class="agency-name">Care &amp; Grow Trust</div>
+
+              <div class="grant-desc">Supports programs that deliver regular social and medical check-ins for older adults in urban neighborhoods.</div>
+
+              <table class="grant-meta" role="presentation">
+                <tr>
+                  <td class="amount">$30,000</td>
+                  <td class="deadline" style="text-align:right;">2026-04-20</td>
+                </tr>
+              </table>
+
+              <div class="sectors">
+                <span class="sector-pill">Elderly Care</span>
+                <span class="sector-pill">Social Services</span>
+              </div>
+
+              <div style="margin-top:14px;">
+                <a class="btn" href="https://granted.app/grant/sample-2">View Full Details →</a>
+              </div>
+            </td>
+          </tr>
+        </table>
+
+        <!-- Match #3 -->
+        <table class="match-table" role="presentation">
+          <tr>
+            <td class="match-header">
+              <div>
+                <div class="meta">Match #3</div>
+                <div class="title">Local Impact Fund</div>
+              </div>
+              <div class="match-score">
+                <div class="percent">87%</div>
+                <div style="font-size:11px; font-weight:600; text-transform:uppercase; opacity:0.9;">Match Score</div>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td class="match-body">
+              <div class="funding-agency">Funding Agency</div>
+              <div class="agency-name">Neighborhood Grants Collective</div>
+
+              <div class="grant-desc">Small grants for locally-run projects that increase community resilience and inclusiveness.</div>
+
+              <table class="grant-meta" role="presentation">
+                <tr>
+                  <td class="amount">$15,000</td>
+                  <td class="deadline" style="text-align:right;">2026-05-10</td>
+                </tr>
+              </table>
+
+              <div class="sectors">
+                <span class="sector-pill">Community</span>
+                <span class="sector-pill">Capacity Building</span>
+              </div>
+
+              <div style="margin-top:14px;">
+                <a class="btn" href="https://granted.app/grant/sample-3">View Full Details →</a>
+              </div>
+            </td>
+          </tr>
+        </table>
+
+        <div class="why">
+          <div style="font-weight:600; color:#0369a1; margin-bottom:8px;">Why These Matches?</div>
+          <div style="font-size:13px; color:#0c4a6e; line-height:1.5;">Our matching algorithm analyzes sector alignment, mission keywords, and grant requirements to find the best opportunities for your organization. Higher match scores indicate better alignment with your profile.</div>
+        </div>
+      </div>
+
+      <div class="footer">
+        Questions about these grants? Visit our platform for more details.<br />
+        <span style="color:#c6c6c6; font-size:12px;">Granted • Making Grant Discovery Simple</span>
+      </div>
+    </div>
+  </body>
+</html>
