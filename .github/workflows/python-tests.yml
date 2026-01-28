@@ -6,14 +6,14 @@ on:
     paths:
       - '**.py'
       - 'requirements.txt'
-      - 'functions/requirements.txt'
+      - 'backend/functions/requirements.txt'
       - '.github/workflows/python-tests.yml'
   pull_request:
     branches: [ main, develop ]
     paths:
       - '**.py'
       - 'requirements.txt'
-      - 'functions/requirements.txt'
+      - 'backend/functions/requirements.txt'
       - '.github/workflows/python-tests.yml'
 
 jobs:
@@ -22,7 +22,11 @@ jobs:
     
     strategy:
       matrix:
-        python-version: ['3.11', '3.12', '3.13']
+        python-version: ['3.11', '3.12']
+
+    defaults:
+      run:
+        working-directory: ./backend
 
     steps:
       - name: Checkout code
@@ -33,12 +37,12 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
+          cache-dependency-path: 'backend/functions/requirements.txt'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install pytest pytest-cov pytest-asyncio
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f functions/requirements.txt ]; then pip install -r functions/requirements.txt; fi
 
       - name: Run unit tests with coverage
@@ -50,7 +54,7 @@ jobs:
 
       - name: Upload coverage to Codecov (optional)
         uses: codecov/codecov-action@v4
-        if: matrix.python-version == '3.13'
+        if: matrix.python-version == '3.12'
         with:
-          file: ./coverage.xml
+          file: ./backend/coverage.xml
           fail_ci_if_error: false
