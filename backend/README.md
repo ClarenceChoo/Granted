@@ -23,9 +23,17 @@ AI-powered grant matching platform for non-profit organisations (NPOs) in Singap
 │  │ • Login      │  │ • Get Saved  │  │ • Firestore  │ │
 │  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘ │
 │         │                  │                  │         │
-└─────────┼──────────────────┼──────────────────┼─────────┘
-          │                  │                  │
-          ▼                  ▼                  ▼
+│  ┌──────────────┐  ┌──────────────┐                   │
+│  │  Get Matches │  │ Email Notify │                   │
+│  │              │  │              │                   │
+│  │ • Auth       │  │ • Weekly     │                   │
+│  │ • Get NPO    │  │ • Manual     │                   │
+│  │   Matches    │  │ • Jinja2     │                   │
+│  └──────┬───────┘  └──────┬───────┘                   │
+│         │                  │                           │
+└─────────┼──────────────────┼───────────────────────────┘
+          │                  │
+          ▼                  ▼
 ┌─────────────────────────────────────────────────────────┐
 │              Firebase Services                          │
 │                                                         │
@@ -36,6 +44,7 @@ AI-powered grant matching platform for non-profit organisations (NPOs) in Singap
 │  │ • npos       │  │ • Email/Pass │  │ • API Keys   │ │
 │  │ • grants     │  │ • JWT Tokens │  │ • Secrets    │ │
 │  │ • matches    │  │              │  │              │ │
+│  │ • mail       │  │              │  │              │ │
 │  └──────────────┘  └──────────────┘  └──────────────┘ │
 └─────────────────────────────────────────────────────────┘
                           │
@@ -55,6 +64,8 @@ AI-powered grant matching platform for non-profit organisations (NPOs) in Singap
 - **Database**: Cloud Firestore (NoSQL)
 - **Authentication**: Firebase Auth (Email/Password)
 - **AI/ML**: OpenAI GPT-4o-2024-08-06 (Structured Outputs)
+- **Email**: Firestore Send Email Extension
+- **Templates**: Jinja2 3.1.6 (HTML email rendering)
 - **Secrets**: Google Cloud Secret Manager
 - **Region**: asia-southeast1 (Singapore)
 
@@ -86,6 +97,25 @@ AI-powered grant matching platform for non-profit organisations (NPOs) in Singap
 3. Send to OpenAI GPT-4o with structured output schema
 4. AI returns exactly 3 ranked matches (0-100 score + reasoning)
 5. Save matches to `matches` collection
+
+### 4. Email Notification Service (`/handlers/send_grant_emails.py`)
+**Triggers:**
+- **send_weekly_grant_emails**: CRON (weekly, Mondays 6AM SGT)
+- **send_grant_emails_manual**: HTTP POST endpoint (optional npo_id param)
+
+**Features:**
+- Sends personalized HTML emails with top 3 grant matches
+- Fetches latest grant details from OurSGGrants API
+- Uses Jinja2 templates for responsive email design
+- Integrates with Firestore Send Email extension
+- Formats grant amounts, closing dates, and categories
+- Includes match scores and AI reasoning for each grant
+
+### 5. Match Retrieval (`/handlers/matching/get_matches.py`)
+- **get_matches**: GET endpoint to retrieve NPO's grant matches
+- Requires Firebase Auth JWT token
+- Authorization check (users can only access their own matches)
+- Returns match data with grant_id, similarity_score, and reasoning
 
 ## Data Models
 
@@ -130,6 +160,20 @@ matches/{npo_id}
 └── updated_at: timestamp
 ```
 
+### Mail Collection (Firestore Send Email Extension)
+```
+mail/{id}
+├── to: string[] (recipient emails)
+├── message: object
+│   ├── subject: string
+│   ├── html: string
+│   └── text: string (optional)
+├── delivery: object
+│   ├── state: string (PENDING/SUCCESS/ERROR)
+│   └── attempts: number
+└── created_at: timestamp
+```
+
 ## API Endpoints
 
 | Endpoint | Method | Description |
@@ -141,8 +185,10 @@ matches/{npo_id}
 | `/save_grant` | POST | Save grant to NPO |
 | `/unsave_grant` | DELETE | Remove saved grant |
 | `/get_saved_grants` | GET | Get NPO's saved grants |
+| `/get_matches` | GET | Get NPO's AI-generated grant matches |
 | `/sync_grants_manual` | POST | Manual grant sync |
 | `/match_grants_manual` | POST | Trigger AI matching |
+| `/send_grant_emails_manual` | POST | Send grant match emails (optional npo_id param) |
 
 ## Secrets Configuration
 
@@ -165,6 +211,8 @@ firebase deploy --only functions:match_grants_manual
 ✅ **Email/Password Authentication** with JWT tokens  
 ✅ **AI-Powered Grant Matching** using OpenAI structured outputs  
 ✅ **Automated Matching** via CRON jobs and Firestore triggers  
+✅ **Personalized Email Notifications** with responsive HTML templates  
+✅ **Weekly Grant Updates** sent to NPOs every Monday at 6AM SGT  
 ✅ **Comprehensive Logging** for AI inference and debugging  
 ✅ **Secrets Management** via Google Cloud Secret Manager  
 ✅ **CORS Support** for cross-origin requests  
