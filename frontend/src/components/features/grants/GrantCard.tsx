@@ -4,9 +4,11 @@ import { Link } from 'react-router-dom'
 
 interface GrantCardProps {
     grant: Grant
+    isSaved?: boolean
+    onToggleSave?: (grantId: string) => Promise<void> | void
 }
 
-export default function GrantCard({ grant }: GrantCardProps) {
+export default function GrantCard({ grant, isSaved = false, onToggleSave }: GrantCardProps) {
     const getStatusColor = (status?: string) => {
         switch (status?.toLowerCase()) {
             case 'green':
@@ -40,6 +42,23 @@ export default function GrantCard({ grant }: GrantCardProps) {
                 isClosedStatus ? 'opacity-75' : 'hover:border-[#1E3A8A]/20'
             }`}
         >
+            {/* Save / Unsave button */}
+            {onToggleSave && (
+                <button
+                    onClick={async (e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        try {
+                            await onToggleSave(grant.id)
+                        } catch (err) {
+                            // swallow - parent handles errors
+                        }
+                    }}
+                    className={`absolute top-3 right-3 text-xs font-medium px-3 py-1 rounded-lg transition ${isSaved ? 'bg-[#1E3A8A] text-white' : 'bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100'}`}
+                >
+                    {isSaved ? 'Saved' : 'Save'}
+                </button>
+            )}
             {/* Agency Icon and Status */}
             <div className="flex justify-between items-start mb-6">
                 <div className="flex items-center gap-3">

@@ -26,7 +26,8 @@ export function logoutLocal() {
 }
 
 export function getStoredIdToken() {
-  return localStorage.getItem('idToken')
+  // Prefer standard idToken but fall back to legacy `granted_token` if present
+  return localStorage.getItem('idToken') || localStorage.getItem('granted_token')
 }
 
 /**
