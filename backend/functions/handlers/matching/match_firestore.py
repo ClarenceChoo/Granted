@@ -62,7 +62,9 @@ def on_npo_change(
         changed_fields = []
         
         for field in relevant_fields:
-            if before_data.get(field) != after_data.get(field):
+            before_value = before_data.get(field) if before_data else None
+            after_value = after_data.get(field) if after_data else None
+            if before_value != after_value:
                 changed_fields.append(field)
         
         if not changed_fields:
@@ -168,7 +170,9 @@ def on_grant_change(
         changed_fields = []
         
         for field in relevant_fields:
-            if before_data.get(field) != after_data.get(field):
+            before_value = before_data.get(field) if before_data else None
+            after_value = after_data.get(field) if after_data else None
+            if before_value != after_value:
                 changed_fields.append(field)
         
         if not changed_fields:
