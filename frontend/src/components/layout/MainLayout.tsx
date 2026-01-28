@@ -1,6 +1,9 @@
 import type { ReactNode, Dispatch, SetStateAction } from 'react'
 import Navbar from './Navbar'
+import { useSavedGrants } from '../../contexts/SavedGrantsContext'
+import { CheckCircle, XCircle, Info } from 'lucide-react'
 import GrantAssistant from '../features/chat/GrantAssistant'
+import { useNavigate } from 'react-router-dom'
 import type { Organization } from '../../types'
 
 interface MainLayoutProps {
@@ -16,13 +19,61 @@ interface MainLayoutProps {
 }
 
 export default function MainLayout({ children, chatOpen, setChatOpen, orgProfile, setOrgProfile, isAuthenticated, setIsAuthenticated, user, setUser }: MainLayoutProps) {
+    const savedCtx = (() => {
+        try {
+            return useSavedGrants()
+        } catch {
+            return null
+        }
+    })()
+    const navigate = (() => { try { return useNavigate() } catch { return null as any } })()
+
     return (
         <div className="min-h-screen bg-[#F8FAFC] relative font-sans text-[#0F172A] selection:bg-[#1E3A8A]/10 selection:text-[#1E3A8A]">
             <Navbar isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated} user={user} setUser={setUser} />
 
             <main>
+                {/* Global notification for saved-grants actions */}
+                {savedCtx?.notification && (
+                    <div className="fixed top-6 right-6 z-50 max-w-sm w-full">
+                        <div className={`flex items-center gap-3 p-4 rounded-xl shadow-xl overflow-hidden ring-1 ring-slate-200 ${savedCtx.notification.type === 'success' ? 'bg-white border-l-4 border-emerald-400' : savedCtx.notification.type === 'error' ? 'bg-white border-l-4 border-red-400' : 'bg-white border-l-4 border-sky-400'}`}>
+                            <div className="shrink-0">
+                                {savedCtx.notification.type === 'success' && <CheckCircle className="w-6 h-6 text-emerald-500" />}
+                                {savedCtx.notification.type === 'error' && <XCircle className="w-6 h-6 text-red-500" />}
+                                {savedCtx.notification.type === 'info' && <Info className="w-6 h-6 text-sky-500" />}
+                            </div>
+                            <div className="flex-1">
+                                <div className="text-sm font-semibold text-slate-900">{savedCtx.notification.type === 'success' ? 'Success' : savedCtx.notification.type === 'error' ? 'Error' : 'Info'}</div>
+                                <div className="mt-1 text-sm text-slate-700">{savedCtx.notification.message}</div>
+                            </div>
+                            <div className="flex items-start">
+                                <button onClick={savedCtx.clearNotification} className="text-slate-500 hover:text-slate-800 text-sm">Dismiss</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
                 {children}
             </main>
+
+            {/* Modal for important saved-grants actions */}
+            {savedCtx?.modalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-black/40" onClick={savedCtx.closeModal} />
+                    <div className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 p-6 z-10">
+                        <h3 className="text-lg font-semibold text-slate-900">Saved grants limit reached</h3>
+                        <p className="text-sm text-slate-600 mt-2">{savedCtx.modalMessage}</p>
+                        <div className="mt-6 flex gap-3 justify-end">
+                            <button
+                                onClick={() => { savedCtx.closeModal(); navigate && navigate('/my-grants') }}
+                                className="bg-[#0F766E] text-white px-4 py-2 rounded-lg font-semibold hover:bg-[#0d6963]"
+                            >
+                                Open My Grants
+                            </button>
+                            <button onClick={savedCtx.closeModal} className="px-4 py-2 rounded-lg border border-slate-200 text-slate-700">Dismiss</button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Floating Chat Button */}
             {!chatOpen && (

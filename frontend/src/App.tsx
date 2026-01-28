@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './App.css'
 import MainLayout from './components/layout/MainLayout'
+import { SavedGrantsProvider } from './contexts/SavedGrantsContext'
 import Home from './pages/Home'
 import Discover from './pages/Discover'
 import GrantDetails from './pages/GrantDetails'
@@ -73,7 +74,8 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <MainLayout
+      <SavedGrantsProvider>
+        <MainLayout
         chatOpen={isChatOpen}
         setChatOpen={setIsChatOpen}
         orgProfile={orgProfile}
@@ -105,7 +107,8 @@ export default function App() {
             element={<SignIn onAuthSuccess={(profile: any) => { setIsAuthenticated(true); setUser(profile); }} />}
           />
         </Routes>
-      </MainLayout>
+        </MainLayout>
+      </SavedGrantsProvider>
     </BrowserRouter>
   )
 }

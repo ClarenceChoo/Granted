@@ -5,11 +5,13 @@ import GrantCard from '../components/features/grants/GrantCard'
 import GrantCardSkeleton from '../components/features/grants/GrantCardSkeleton'
 import type { Grant } from '../types'
 import { fetchGrants } from '../services/grantsService'
+import { useSavedGrants } from '../contexts/SavedGrantsContext'
 
 export default function Discover() {
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedAgency, setSelectedAgency] = useState<string | null>(null)
     const [grants, setGrants] = useState<Grant[]>(GRANTS_DATA)
+    const { savedIds, save, unsave, isSaved } = useSavedGrants()
     const [isLoading, setIsLoading] = useState(true)
 
     useEffect(() => {
@@ -22,7 +24,16 @@ export default function Discover() {
             setIsLoading(false)
         }
         loadGrants()
+        // saved state is managed by SavedGrantsProvider
     }, [])
+
+    const toggleSave = async (grantId: string) => {
+        if (isSaved(grantId)) {
+            await unsave(grantId)
+        } else {
+            await save(grantId)
+        }
+    }
 
     const filteredGrants = grants.filter(grant => {
         const matchesSearch = grant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -114,7 +125,7 @@ export default function Discover() {
                     <>
                         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {filteredGrants.map(grant => (
-                                <GrantCard key={grant.id} grant={grant} />
+                                <GrantCard key={grant.id} grant={grant} isSaved={savedIds.includes(grant.id)} onToggleSave={toggleSave} />
                             ))}
                         </div>
 
