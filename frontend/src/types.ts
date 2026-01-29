@@ -10,6 +10,7 @@ export interface Grant {
     sectors: Sector[];
     eligibility: string[];
     matchScore?: number; // Calculated dynamically
+    matchReasoning?: string;
     status?: string;
     agencyIconUrl?: string;
     applicableTo?: string[];

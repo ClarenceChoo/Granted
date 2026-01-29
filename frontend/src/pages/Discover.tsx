@@ -13,6 +13,7 @@ export default function Discover() {
     const [grants, setGrants] = useState<Grant[]>(GRANTS_DATA)
     const { savedIds, save, unsave, isSaved } = useSavedGrants()
     const [isLoading, setIsLoading] = useState(true)
+    const [selectedStatus, setSelectedStatus] = useState<'all' | 'open' | 'closed'>('all')
 
     useEffect(() => {
         const loadGrants = async () => {
@@ -35,12 +36,19 @@ export default function Discover() {
         }
     }
 
+    const isClosedGrant = (grant: Grant) => grant.deadline === 'Closed' || grant.status?.toLowerCase() === 'red'
+
     const filteredGrants = grants.filter(grant => {
         const matchesSearch = grant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             grant.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
             grant.agency.toLowerCase().includes(searchTerm.toLowerCase())
         const matchesAgency = selectedAgency ? grant.agency === selectedAgency : true
-        return matchesSearch && matchesAgency
+        const matchesStatus = selectedStatus === 'all'
+            ? true
+            : selectedStatus === 'closed'
+                ? isClosedGrant(grant)
+                : !isClosedGrant(grant)
+        return matchesSearch && matchesAgency && matchesStatus
     })
 
     const allAgencies = Array.from(new Set(grants.map(g => g.agency))).sort()
@@ -67,6 +75,51 @@ export default function Discover() {
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] focus:border-transparent transition"
                             />
+                        </div>
+                    </div>
+
+                    {/* Status Filter */}
+                    <div className="p-4 border-b border-slate-100">
+                        <div className="flex items-center gap-3 mb-3">
+                            <Filter className="w-4 h-4 text-slate-500" />
+                            <span className="text-sm font-semibold text-slate-700 uppercase tracking-wider">Filter by Status</span>
+                            {selectedStatus !== 'all' && (
+                                <button
+                                    onClick={() => setSelectedStatus('all')}
+                                    className="ml-auto text-xs text-[#1E3A8A] hover:text-[#0F766E] font-medium"
+                                >
+                                    Clear filter
+                                </button>
+                            )}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            <button
+                                onClick={() => setSelectedStatus('all')}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${selectedStatus === 'all'
+                                    ? 'bg-[#1E3A8A] text-white shadow-md shadow-[#1E3A8A]/30'
+                                    : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200'
+                                    }`}
+                            >
+                                All ({grants.length})
+                            </button>
+                            <button
+                                onClick={() => setSelectedStatus('open')}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${selectedStatus === 'open'
+                                    ? 'bg-[#1E3A8A] text-white shadow-md shadow-[#1E3A8A]/30'
+                                    : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200'
+                                    }`}
+                            >
+                                Open ({grants.filter(g => !isClosedGrant(g)).length})
+                            </button>
+                            <button
+                                onClick={() => setSelectedStatus('closed')}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${selectedStatus === 'closed'
+                                    ? 'bg-[#1E3A8A] text-white shadow-md shadow-[#1E3A8A]/30'
+                                    : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200'
+                                    }`}
+                            >
+                                Closed ({grants.filter(g => isClosedGrant(g)).length})
+                            </button>
                         </div>
                     </div>
 
@@ -133,7 +186,7 @@ export default function Discover() {
                             <div className="text-center py-20">
                                 <p className="text-slate-500 text-lg">No grants found matching your criteria.</p>
                                 <button
-                                    onClick={() => { setSearchTerm(''); setSelectedAgency(null) }}
+                                    onClick={() => { setSearchTerm(''); setSelectedAgency(null); setSelectedStatus('all') }}
                                     className="mt-4 text-[#1E3A8A] font-medium hover:underline"
                                 >
                                     Clear filters

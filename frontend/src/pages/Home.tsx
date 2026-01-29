@@ -10,13 +10,12 @@ interface HomeProps {
     matchedGrants: Grant[]
     orgProfile: Organization
     onOpenChat: () => void
-    isSubscribed: boolean
-    setIsSubscribed: (val: boolean) => void
     isComplete: boolean
     isLoading: boolean
+    isAuthenticated: boolean
 }
 
-export default function Home({ matchedGrants, orgProfile, onOpenChat, isSubscribed, setIsSubscribed, isComplete, isLoading }: HomeProps) {
+export default function Home({ matchedGrants, orgProfile, onOpenChat, isComplete, isLoading, isAuthenticated }: HomeProps) {
     return (
         <>
             {/* Hero Section */}
@@ -82,21 +81,24 @@ export default function Home({ matchedGrants, orgProfile, onOpenChat, isSubscrib
                                     ? 'Personalized opportunities based on your mission statement.'
                                     : 'Curated opportunities for Singaporean Non-Profits.'}
                             </p>
+                            {!isAuthenticated && (
+                                <div className="mt-5 flex flex-col sm:flex-row gap-3">
+                                    <Link
+                                        to="/signin"
+                                        className="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-[#1E3A8A] text-white font-semibold shadow-lg shadow-[#1E3A8A]/25 hover:bg-[#162b6f] transition"
+                                    >
+                                        Sign in to get your matches
+                                    </Link>
+                                    <Link
+                                        to="/discover"
+                                        className="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-white text-[#0F172A] font-semibold border border-[#E2E8F0] shadow-sm hover:bg-slate-50 hover:border-slate-300 transition"
+                                    >
+                                        Browse all grants
+                                    </Link>
+                                </div>
+                            )}
                         </div>
 
-                        {/* Subscription Toggle */}
-                        <div className="flex items-center gap-4 bg-slate-50 p-2 pl-4 rounded-xl border border-[#E2E8F0] shadow-sm">
-                            <div className="flex flex-col">
-                                <span className="text-sm font-semibold text-[#0F172A]">Instant Alerts</span>
-                                <span className="text-xs text-slate-500">Via Email & Telegram</span>
-                            </div>
-                            <button
-                                onClick={() => setIsSubscribed(!isSubscribed)}
-                                className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#0F766E] focus:ring-offset-2 ${isSubscribed ? 'bg-[#0F766E]' : 'bg-slate-300'}`}
-                            >
-                                <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${isSubscribed ? 'translate-x-6' : 'translate-x-1'}`} />
-                            </button>
-                        </div>
                     </div>
 
                     {/* (EmailTester removed) */}
@@ -109,7 +111,17 @@ export default function Home({ matchedGrants, orgProfile, onOpenChat, isSubscrib
                             ))
                         ) : matchedGrants.length > 0 ? (
                             matchedGrants.map((grant) => (
-                                <GrantCard key={grant.id} grant={grant} />
+                                <GrantCard
+                                    key={grant.id}
+                                    grant={grant}
+                                    linkState={{
+                                        from: 'top-matched',
+                                        matchReasoning: grant.matchReasoning,
+                                        matchScore: grant.matchScore,
+                                    }}
+                                    matchBadgeLabel={!isAuthenticated ? 'Popular' : undefined}
+                                    showMatchScore={isAuthenticated}
+                                />
                             ))
                         ) : (
                             <div className="col-span-3 text-center py-12">

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useLocation } from 'react-router-dom'
 import { ArrowLeft, Calendar, ExternalLink, Hash, CheckCircle, AlertCircle, X } from 'lucide-react'
 import { GRANTS_DATA } from '../data'
 import { fetchGrants } from '../services/grantsService'
@@ -7,6 +7,8 @@ import type { Grant } from '../types'
 
 export default function GrantDetails() {
     const { id } = useParams<{ id: string }>()
+    const location = useLocation()
+    const matchState = (location.state as any) || null
     const [grant, setGrant] = useState<Grant | null>(null)
     const [isLoading, setIsLoading] = useState(true)
     const [showSuccess, setShowSuccess] = useState(false)
@@ -119,6 +121,22 @@ export default function GrantDetails() {
                                 {grant.description}
                             </p>
                         </div>
+
+                        {matchState?.from === 'top-matched' && matchState?.matchReasoning && (
+                            <div className="bg-emerald-50/60 border border-emerald-100 rounded-2xl p-8 shadow-sm">
+                                <div className="flex items-center justify-between gap-3 mb-3">
+                                    <h3 className="text-lg font-bold text-emerald-900">Why this matches you</h3>
+                                    {matchState?.matchScore !== undefined && (
+                                        <span className="text-xs font-semibold text-emerald-700 bg-white/70 px-3 py-1 rounded-full border border-emerald-200">
+                                            Match {matchState.matchScore}%
+                                        </span>
+                                    )}
+                                </div>
+                                <p className="text-emerald-900/90 leading-relaxed">
+                                    {matchState.matchReasoning}
+                                </p>
+                            </div>
+                        )}
 
                         {(grant.eligibility.length > 0 || (grant.applicableTo && grant.applicableTo.length > 0)) && (
                             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
