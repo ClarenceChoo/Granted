@@ -22,12 +22,19 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
   const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null)
   const [deactivateReason, setDeactivateReason] = useState('User requested account deletion')
   const [deactivating, setDeactivating] = useState(false)
+  const [updatingProfile, setUpdatingProfile] = useState(false)
   const [confirmText, setConfirmText] = useState('')
   const [deactivated, setDeactivated] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
   const aiProfile = (location.state as any)?.aiProfile
   const [aiSuggestion, setAiSuggestion] = useState<any | null>(null)
+
+  const normalizeBeneficiaries = (value: any) => {
+    if (Array.isArray(value)) return value.join(', ')
+    if (typeof value === 'string') return value
+    return value ? String(value) : ''
+  }
 
   useEffect(() => {
     const load = async () => {
@@ -44,7 +51,7 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
       setOrgName(aiProfile.name || orgName)
       setOrgSector(aiProfile.sector || orgSector)
       setMission(aiProfile.mission || mission)
-      setBeneficiaries(aiProfile.beneficiaries || beneficiaries)
+      setBeneficiaries(normalizeBeneficiaries(aiProfile.beneficiaries || beneficiaries))
       setAnnualBudget(aiProfile.annualBudget || annualBudget)
       setAiSuggestion(aiProfile.suggestion || null)
     }
@@ -52,6 +59,25 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
 
   // Populate fields from provided orgProfile prop or from locally stored user profile
   useEffect(() => {
+    const storedOrgRaw = localStorage.getItem('granted_org_profile')
+    if (storedOrgRaw) {
+      try {
+        const stored = JSON.parse(storedOrgRaw)
+        if (!user?.email || !stored?.email || stored.email === user.email) {
+          setOrgName(stored.name || '')
+          setOrgSector(stored.sector || 'Social Service')
+          setMission(stored.mission || stored.description || '')
+          if (stored.beneficiaries) setBeneficiaries(normalizeBeneficiaries(stored.beneficiaries))
+          if (stored.budget || stored.annualBudget) {
+            setAnnualBudget(String(stored.annualBudget || stored.budget))
+          }
+          return
+        }
+      } catch {
+        // ignore parse errors
+      }
+    }
+
     // prefer explicit orgProfile prop
     if (orgProfile) {
       setOrgName(orgProfile.name || '')
@@ -64,7 +90,7 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
           const users = JSON.parse(usersRaw)
           const entry = users[user.email]
           if (entry?.profile) {
-            setBeneficiaries((entry.profile.beneficiaries || []).join(', '))
+            setBeneficiaries(normalizeBeneficiaries(entry.profile.beneficiaries))
             if (entry.profile.budget) setAnnualBudget(String(entry.profile.budget))
           }
         } catch {
@@ -85,7 +111,7 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
             setOrgName(entry.profile.name || '')
             setOrgSector(entry.profile.sector || 'Social Service')
             setMission(entry.profile.mission || entry.profile.description || '')
-            setBeneficiaries((entry.profile.beneficiaries || []).join(', '))
+            setBeneficiaries(normalizeBeneficiaries(entry.profile.beneficiaries))
             if (entry.profile.budget) setAnnualBudget(String(entry.profile.budget))
           }
         } catch {
@@ -173,6 +199,7 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
   }
 
   const handleUpdateProfile = async () => {
+    if (updatingProfile) return
     const body = {
       name: orgName,
       sector: orgSector,
@@ -199,6 +226,7 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
     }
 
     try {
+      setUpdatingProfile(true)
       const res = await authFetch('https://update-npo-kun7hshp7q-as.a.run.app', {
         method: 'PUT',
         body: JSON.stringify(body),
@@ -211,13 +239,48 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
       }
 
       const data = await res.json()
+      const updatedProfile = {
+        uen: (data.uen as string) || 'T0000000X',
+        name: data.name || orgName,
+        sector: data.sector || orgSector,
+        mission: data.description || mission,
+        beneficiaries: body.beneficiaries,
+        budget: body.budget,
+        annualBudget,
+      }
+
       // Apply server response to app state if possible
       if (setOrgProfile) {
-        setOrgProfile({ uen: (data.uen as string) || 'T0000000X', name: data.name || orgName, sector: data.sector || orgSector, mission: data.description || mission })
+        setOrgProfile(updatedProfile)
+      }
+
+      // Persist locally so refresh keeps the updated profile
+      const email = user?.email || localStorage.getItem('granted_user_email')
+      localStorage.setItem('granted_org_profile', JSON.stringify({ ...updatedProfile, email }))
+      if (email) {
+        const usersRaw = localStorage.getItem('granted_users')
+        if (usersRaw) {
+          try {
+            const users = JSON.parse(usersRaw)
+            if (users[email]?.profile) {
+              users[email].profile = {
+                ...users[email].profile,
+                ...updatedProfile,
+                email,
+              }
+              localStorage.setItem('granted_users', JSON.stringify(users))
+            }
+          } catch {
+            // ignore parse errors
+          }
+        }
+        localStorage.setItem('granted_user_profile', JSON.stringify({ ...updatedProfile, email }))
       }
       setNotification({ type: 'success', message: 'Organization profile updated on server.' })
     } catch (err: any) {
       setNotification({ type: 'error', message: 'Update request failed: ' + (err?.message || String(err)) })
+    } finally {
+      setUpdatingProfile(false)
     }
   }
 
@@ -332,7 +395,13 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
 
         <div className="flex gap-3">
           <button onClick={handleSend} disabled={sending} className="bg-[#0F766E] text-white px-4 py-2 rounded hover:bg-[#0d6963]">{sending ? 'Sending...' : 'Send Best Matching Grants'}</button>
-          <button onClick={handleUpdateProfile} className="px-3 py-2 border rounded">Update Profile</button>
+          <button
+            onClick={handleUpdateProfile}
+            disabled={updatingProfile}
+            className="px-3 py-2 border rounded disabled:opacity-60"
+          >
+            {updatingProfile ? 'Updating...' : 'Update Profile'}
+          </button>
         </div>
         {notification && (
           <div className={`mt-4 p-3 rounded text-sm ${notification.type === 'success' ? 'bg-green-50 border border-green-200 text-green-800' : notification.type === 'error' ? 'bg-red-50 border border-red-200 text-red-800' : 'bg-blue-50 border border-blue-200 text-blue-800'}`}>

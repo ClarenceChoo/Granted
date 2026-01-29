@@ -31,6 +31,12 @@ export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: an
 
     const [showAiOverlay, setShowAiOverlay] = useState(false)
 
+    const storeProfileLocally = (profile: { email?: string; name?: string }) => {
+        if (!profile?.email) return
+        localStorage.setItem('granted_user_email', profile.email)
+        localStorage.setItem('granted_user_profile', JSON.stringify(profile))
+    }
+
     // AI Auto-fill Simulation sequence
     useEffect(() => {
         if (effectivePrefill) {
@@ -127,13 +133,17 @@ export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: an
                 // After creating the NPO on your backend, call the login endpoint to obtain idToken/refreshToken
                 try {
                     await loginNPO(formData.email, formData.password)
-                    onAuthSuccess?.(users[formData.email].profile)
+                    const profile = users[formData.email].profile
+                    storeProfileLocally(profile)
+                    onAuthSuccess?.(profile)
                     alert('Successfully Registered and Logged In!')
                     navigate('/')
                 } catch (loginErr: any) {
                     // registration succeeded but login failed — still inform user
                     console.warn('Registered but login failed', loginErr)
-                    onAuthSuccess?.(users[formData.email].profile)
+                    const profile = users[formData.email].profile
+                    storeProfileLocally(profile)
+                    onAuthSuccess?.(profile)
                     alert('Registered successfully. Please sign in.')
                     navigate('/signin')
                 }
@@ -144,8 +154,11 @@ export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: an
             // Login mode: call backend login endpoint to get idToken etc.
             await loginNPO(formData.email, formData.password)
             // backend returned tokens stored by loginNPO; no Firebase exchange required
-
-            const profile = { email: formData.email, name: formData.name || formData.email }
+            const usersRaw = localStorage.getItem('granted_users')
+            const users = usersRaw ? JSON.parse(usersRaw) : {}
+            const storedProfile = users[formData.email]?.profile
+            const profile = storedProfile || { email: formData.email, name: formData.name || formData.email }
+            storeProfileLocally(profile)
             onAuthSuccess?.(profile)
             alert('Successfully Logged In!')
             navigate('/')
