@@ -33,6 +33,8 @@ echo "Running: firebase functions:delete --force --region asia-southeast1"
 echo ""
 
 firebase functions:delete \
+  ai_chat \
+  chat_refine \
   create_npo \
   deactivate_npo \
   get_grant \
