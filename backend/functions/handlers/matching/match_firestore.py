@@ -33,8 +33,10 @@ def on_npo_change(
     """
     Trigger matching when an NPO document is created or updated.
     
-    This ensures that when an NPO updates their profile (description,
-    sector, beneficiaries, etc.), their grant matches are refreshed.
+    COST-EFFICIENT: Only runs inference on the single NPO that changed.
+    This ensures that when an NPO creates their profile or updates it
+    (description, sector, beneficiaries, etc.), only THEIR grant matches
+    are refreshed, not all NPOs in the system.
     
     Args:
         event: Firestore event containing before/after document snapshots
@@ -92,7 +94,7 @@ def on_npo_change(
         db = get_firestore_client()
         service = get_matching_service()
         
-        # Match this specific NPO
+        # Match this specific NPO only (cost-efficient: single inference)
         result = match_single_npo(
             db=db,
             service=service,
@@ -144,8 +146,12 @@ def on_grant_change(
     """
     Trigger re-matching for all NPOs when a grant is created or updated.
     
-    When grants change, all NPOs need their matches refreshed to ensure
-    they see the most relevant grants.
+    COST WARNING: This runs inference on ALL NPOs in the system.
+    When grant data changes, all NPOs need their matches refreshed to ensure
+    they see the most relevant and up-to-date grant opportunities.
+    
+    Note: For large NPO counts, consider disabling this trigger and relying
+    on the daily CRON job (match_grants_daily) instead.
     
     Args:
         event: Firestore event containing before/after document snapshots
@@ -213,7 +219,7 @@ def on_grant_change(
         )
         
         logger.info(
-            f"[Firestore Trigger] Batch re-matching complete",
+            "[Firestore Trigger] Batch re-matching complete",
             extra={
                 "grant_id": grant_id,
                 "processed": result["processed"],
@@ -229,7 +235,7 @@ def on_grant_change(
         
     except Exception as e:
         logger.error(
-            f"[Firestore Trigger] Error during batch re-matching",
+            "[Firestore Trigger] Error during batch re-matching",
             extra={"grant_id": grant_id, "error": str(e)},
             exc_info=True
         )

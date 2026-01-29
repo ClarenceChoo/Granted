@@ -17,7 +17,7 @@ logger.setLevel(logging.INFO)
 
 
 @scheduler_fn.on_schedule(
-    schedule="0 6 * * *",  # Run at 6:00 AM every day (UTC)
+    schedule="15 6 * * *",  # Run at 6:15 AM every day - 15 minutes after sync_grants_daily
     timezone=scheduler_fn.Timezone("Asia/Singapore"),  # Singapore timezone
     memory=512,  # MB - AI inference may need more memory
     timeout_sec=540,  # 9 minutes - batch processing may take time
@@ -27,7 +27,7 @@ def match_grants_daily(event: scheduler_fn.ScheduledEvent) -> None:
     """
     Scheduled function to match all NPOs to grants daily.
     
-    Runs at 6:00 AM Singapore time every day.
+    Runs at 6:15 AM Singapore time every day (15 minutes after grant sync).
     Updates all matches in the 'matches' collection.
     
     Args:

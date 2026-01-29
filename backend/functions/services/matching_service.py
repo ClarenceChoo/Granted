@@ -5,7 +5,6 @@ This service matches NPOs to relevant grants based on their descriptions,
 sectors, beneficiaries, and other criteria using OpenAI's structured outputs.
 """
 
-import json
 import logging
 from datetime import datetime, timezone
 from typing import Optional
@@ -79,12 +78,22 @@ class GrantMatchingService:
         Returns:
             Formatted string describing the NPO
         """
+        # Extract and format beneficiaries
+        beneficiaries = npo_data.get('beneficiaries', [])
+        beneficiaries_str = ', '.join(beneficiaries) if beneficiaries else 'Not specified'
+        
+        # Extract and format budget
+        budget = npo_data.get('budget')
+        budget_str = f"${budget:,.0f}" if budget and isinstance(budget, (int, float)) else 'Not specified'
+        
         return f"""
 NPO Name: {npo_data.get('name', 'Unknown')}
 Sector: {npo_data.get('sector', 'Not specified')}
 Description: {npo_data.get('description', 'No description provided')}
-Beneficiaries: {', '.join(npo_data.get('beneficiaries', [])) or 'Not specified'}
-Budget: ${npo_data.get('budget', 'Not specified')}
+Beneficiaries: {beneficiaries_str}
+Budget: {budget_str}
+Location: {npo_data.get('location', 'Not specified')}
+Size: {npo_data.get('size', 'Not specified')}
         """.strip()
     
     def _build_grants_context(self, grants: list[dict]) -> str:
@@ -99,14 +108,32 @@ Budget: ${npo_data.get('budget', 'Not specified')}
         """
         grants_text = []
         for grant in grants:
+            # Format applicable_to
+            applicable_to = grant.get('applicable_to', [])
+            applicable_to_str = ', '.join(applicable_to) if applicable_to else 'All organizations'
+            
+            # Format amount/budget
+            amount = grant.get('amount', 'Varies')
+            
+            # Format closing dates
+            closing_dates = grant.get('closingDates', {})
+            closing_info = []
+            if closing_dates:
+                if closing_dates.get('nextApplicationDate'):
+                    closing_info.append(f"Next Application: {closing_dates.get('nextApplicationDate')}")
+                if closing_dates.get('closingDate'):
+                    closing_info.append(f"Closes: {closing_dates.get('closingDate')}")
+            closing_str = ' | '.join(closing_info) if closing_info else 'Rolling basis'
+            
             grant_text = f"""
 Grant ID: {grant.get('id', 'Unknown')}
 Name: {grant.get('name', 'Unknown')}
 Agency: {grant.get('agency_code', 'Unknown')}
 Status: {grant.get('status', 'Unknown')}
 Description: {grant.get('description', 'No description')}
-Applicable To: {', '.join(grant.get('applicable_to', [])) or 'All'}
-Amount: {grant.get('amount', 'Varies')}
+Applicable To: {applicable_to_str}
+Amount: {amount}
+Dates: {closing_str}
             """.strip()
             grants_text.append(grant_text)
         
@@ -148,23 +175,36 @@ Amount: {grant.get('amount', 'Varies')}
         npo_context = self._build_npo_context(npo_data)
         grants_context = self._build_grants_context(grants)
         
-        system_prompt = """You are an expert grant matching assistant for non-profit organisations (NPOs).
+        system_prompt = """You are an expert grant matching assistant for non-profit organisations (NPOs) in Singapore.
 
-Your task is to analyze an NPO's profile and match them with the most relevant grants based on:
-1. Sector alignment - Does the grant target the NPO's sector?
-2. Beneficiary match - Do the grant's target beneficiaries align with the NPO's?
-3. Mission alignment - Does the grant's purpose align with the NPO's description and goals?
-4. Budget fit - Is the grant amount reasonable for the NPO's scale?
-5. Grant status - Prioritize "Open" grants, but consider others if highly relevant
+Your task is to analyze an NPO's profile and match them with the most relevant grants. You MUST be STRICT and REALISTIC in your scoring.
 
-You MUST provide exactly 3 matches, no more and no fewer. Rank all available grants and return the top 3 most relevant.
-Score each match from 0-100 where:
-- 90-100: Excellent match, highly recommended
-- 70-89: Good match, worth applying
-- 50-69: Moderate match, consider if no better options
-- Below 50: Poor match, not recommended (but still include if it's in the top 3)
+SCORING CRITERIA (weighted importance):
+1. Sector alignment (30%) - Does the grant explicitly target the NPO's sector?
+2. Beneficiary match (25%) - Do the grant's target beneficiaries align with the NPO's?
+3. Eligibility (20%) - Does the NPO meet "Applicable To" requirements?
+4. Mission alignment (15%) - Does the grant's purpose align with the NPO's description?
+5. Budget fit (10%) - Is the grant amount appropriate for the NPO's scale?
 
-Be objective and provide clear reasoning for each match. Consider grant status in your scoring but focus primarily on relevance."""
+STRICT SCORING GUIDELINES - BE CONSERVATIVE:
+- 95-100: PERFECT match - ALL criteria align strongly, almost certain eligibility
+- 85-94: EXCELLENT match - 4/5 criteria align strongly, very high confidence
+- 75-84: STRONG match - 3/5 criteria align well, good confidence
+- 65-74: GOOD match - 2-3/5 criteria align, worth considering
+- 55-64: MODERATE match - Some alignment but notable gaps
+- 45-54: WEAK match - Limited alignment, borderline relevance
+- 35-44: POOR match - Minimal alignment, likely not suitable
+- Below 35: VERY POOR match - No clear alignment
+
+IMPORTANT RULES:
+1. You MUST provide exactly 3 matches, no more and no fewer
+2. BE STRICT - Most matches should score 60-85, not 90+
+3. Only give 90+ scores when there is EXCEPTIONAL alignment across ALL criteria
+4. If "Applicable To" excludes the NPO, score MUST be below 50
+5. "Open" status adds +5 bonus, but doesn't override poor fit
+6. Provide SPECIFIC reasoning citing which criteria match/don't match
+
+Be objective, conservative, and evidence-based. Users trust your scores for decision-making."""
 
         user_prompt = f"""Please match the following NPO to the most relevant grants:
 
@@ -178,7 +218,7 @@ Analyze and return EXACTLY 3 grants ranked by relevance. You must provide 3 matc
 
         try:
             logger.info(
-                f"[AI Inference] Sending request to OpenAI",
+                "[AI Inference] Sending request to OpenAI",
                 extra={
                     "model": self.MODEL,
                     "npo_id": npo_id,
@@ -197,7 +237,7 @@ Analyze and return EXACTLY 3 grants ranked by relevance. You must provide 3 matc
                     {"role": "user", "content": user_prompt}
                 ],
                 response_format=MatchingResult,
-                temperature=0.3  # Lower temperature for more consistent results
+                temperature=0.1  # Very low temperature for consistent, conservative scoring
             )
             
             end_time = datetime.now(timezone.utc)
@@ -208,13 +248,13 @@ Analyze and return EXACTLY 3 grants ranked by relevance. You must provide 3 matc
             # Validate result
             if not result or not result.matches:
                 logger.error(
-                    f"[AI Inference] Empty or invalid response from OpenAI",
+                    "[AI Inference] Empty or invalid response from OpenAI",
                     extra={"npo_id": npo_id}
                 )
                 return None
             
             logger.info(
-                f"[AI Inference] Successfully received response from OpenAI",
+                "[AI Inference] Successfully received response from OpenAI",
                 extra={
                     "npo_id": npo_id,
                     "duration_ms": duration_ms,
@@ -459,7 +499,7 @@ def match_all_npos(
         Summary of matching results
     """
     logger.info(
-        f"[Matching] Starting batch match for all NPOs",
+        "[Matching] Starting batch match for all NPOs",
         extra={"trigger_source": trigger_source}
     )
     
@@ -472,7 +512,7 @@ def match_all_npos(
     # Get all NPOs
     npos = get_all_npos(db)
     if not npos:
-        logger.warning(f"[Matching] No NPOs found")
+        logger.warning("[Matching] No NPOs found")
         return {"success": False, "error": "No NPOs found", "processed": 0}
     
     results = {
@@ -535,7 +575,7 @@ def match_all_npos(
             })
     
     logger.info(
-        f"[Matching] Batch matching complete",
+        "[Matching] Batch matching complete",
         extra={
             "trigger_source": trigger_source,
             "processed": results["processed"],
