@@ -77,7 +77,7 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
     const fetchAiRefinement = async (mission: string, sector: string = 'Social Service') => {
         setIsRefining(true)
         try {
-            const response = await fetch('http://localhost:8000/api/chat-refine', {
+            const response = await fetch('https://chat-refine-kun7hshp7q-as.a.run.app', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ mission, sector }),
@@ -112,7 +112,7 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
         setIsChatLoading(true)
 
         try {
-            const response = await fetch('http://localhost:8000/api/chat', {
+            const response = await fetch('https://ai-chat-kun7hshp7q-as.a.run.app', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -506,8 +506,8 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
                                         )}
                                         <div className="space-y-2 max-w-[85%]">
                                             <div className={`p-4 rounded-2xl shadow-sm leading-relaxed whitespace-pre-wrap ${msg.role === 'user'
-                                                    ? 'bg-[#0F766E] text-white rounded-tr-none'
-                                                    : 'bg-white border border-slate-100 text-slate-700 rounded-tl-none'
+                                                ? 'bg-[#0F766E] text-white rounded-tr-none'
+                                                : 'bg-white border border-slate-100 text-slate-700 rounded-tl-none'
                                                 }`}>
                                                 <p>{msg.content}</p>
                                             </div>

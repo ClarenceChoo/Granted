@@ -140,6 +140,7 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
   }, [aiProfile])
 
   // Populate fields from provided orgProfile prop or from locally stored user profile
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (hasLoadedRemoteProfileRef.current) return
     const storedOrgRaw = localStorage.getItem('granted_org_profile')
@@ -189,7 +190,7 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
         }
       }
     }
-  }, [orgProfile?.name, orgProfile?.sector, orgProfile?.mission, user?.email])
+  }, [user?.email])
 
   // Auto-dismiss notifications after a short duration
   useEffect(() => {
@@ -226,7 +227,7 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
       })
       if (filteredChildGrants.length > 0) {
         topGrants = filteredChildGrants.slice(0, 3)
-        console.debug('AdminDashboard: Using hardcoded child-related grants for demo', topGrants.map(g=>g.id))
+        console.debug('AdminDashboard: Using hardcoded child-related grants for demo', topGrants.map(g => g.id))
       }
     }
 
@@ -259,7 +260,7 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
       setNotification({ type: 'success', message: `Email sent to ${recipient}.` })
     } catch (err: any) {
       setNotification({ type: 'error', message: 'Failed to send — preview opened in a new tab.' })
-      const previewHtml = `<html><body><h2>Preview: Top ${topGrants.length} Grants for ${org.name}</h2>${topGrants.map(g=>`<h3>${g.name}</h3><p>${g.description}</p>`).join('')}</body></html>`
+      const previewHtml = `<html><body><h2>Preview: Top ${topGrants.length} Grants for ${org.name}</h2>${topGrants.map(g => `<h3>${g.name}</h3><p>${g.description}</p>`).join('')}</body></html>`
       const blob = new Blob([previewHtml], { type: 'text/html' })
       const url = URL.createObjectURL(blob)
       window.open(url, '_blank')
@@ -441,23 +442,23 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
           </div>
           <div>
             <label htmlFor="admin-org-name" className="text-xs font-semibold">Organization Name</label>
-            <input id="admin-org-name" name="orgName" value={orgName} onChange={e=>setOrgName(e.target.value)} className="p-2 border rounded w-full" />
+            <input id="admin-org-name" name="orgName" value={orgName} onChange={e => setOrgName(e.target.value)} className="p-2 border rounded w-full" />
           </div>
           <div>
             <label htmlFor="admin-sector" className="text-xs font-semibold">Sector</label>
-            <input id="admin-sector" name="sector" value={orgSector} onChange={e=>setOrgSector(e.target.value as Sector)} className="p-2 border rounded w-full" />
+            <input id="admin-sector" name="sector" value={orgSector} onChange={e => setOrgSector(e.target.value as Sector)} className="p-2 border rounded w-full" />
           </div>
           <div>
             <label htmlFor="admin-annual-budget" className="text-xs font-semibold">Annual Budget</label>
-            <input id="admin-annual-budget" name="annualBudget" value={annualBudget} onChange={e=>setAnnualBudget(e.target.value)} className="p-2 border rounded w-full" />
+            <input id="admin-annual-budget" name="annualBudget" value={annualBudget} onChange={e => setAnnualBudget(e.target.value)} className="p-2 border rounded w-full" />
           </div>
           <div className="md:col-span-2">
             <label htmlFor="admin-mission" className="text-xs font-semibold">Mission / What you do</label>
-            <textarea id="admin-mission" name="mission" value={mission} onChange={e=>setMission(e.target.value)} className="p-2 border rounded w-full h-24" />
+            <textarea id="admin-mission" name="mission" value={mission} onChange={e => setMission(e.target.value)} className="p-2 border rounded w-full h-24" />
           </div>
           <div className="md:col-span-2">
             <label htmlFor="admin-beneficiaries" className="text-xs font-semibold">Primary Beneficiaries</label>
-            <input id="admin-beneficiaries" name="beneficiaries" value={beneficiaries} onChange={e=>setBeneficiaries(e.target.value)} className="p-2 border rounded w-full" />
+            <input id="admin-beneficiaries" name="beneficiaries" value={beneficiaries} onChange={e => setBeneficiaries(e.target.value)} className="p-2 border rounded w-full" />
           </div>
         </div>
 
