@@ -16,15 +16,21 @@ How might non-profit organisations "pull" information about grants from the OurS
 
 ### What it does
 
-- **Interactive Profiling**: NPOs chat with a bot that interviews them to capture mission, budget, and KPIs, converting conversational answers into a structured `Profile_JSON`.
-- **Curator**: A scheduling agent sends a high-value digest that ranks opportunities using vector similarity and matching logic (including grant quantum vs. project size) and surfaces a high-confidence "Top 3".
-- **Detection**: Continuous monitoring detects new grants on OurSG and pushes "Flash" notifications to matched NPOs.
+- **Grant Discovery**: Browse and search through available grants from OurSG with real-time filtering by category, eligibility, and funding amount.
+- **AI-Powered Assistant**: Chat with an intelligent assistant to get help finding relevant grants, understanding requirements, and refining your search.
+- **Smart Matching**: Automated matching engine that analyzes NPO profiles against grant criteria using vector embeddings and intelligent scoring.
+- **Saved Grants**: Bookmark grants of interest and track them in a personalized dashboard.
+- **Email Notifications**: Receive automated email digests with matched grants, including grant details, deadlines, and application links.
+- **NPO Profile Management**: Create and manage organization profiles with mission, budget, focus areas, and KPIs for better matching.
 
 ### Tech Stack
 
-- Frontend/Dashboard: Next.js (NPO interface)
-- Database: Schema tracks `Profile_JSON`, vector embeddings, and frequency preferences
-- Notifications: Resend + React Email for mobile-responsive summaries
+- **Frontend**: Vite + React + TypeScript (NPO interface)
+- **Backend**: Python with Firebase Functions
+- **Database**: Firestore for NPO profiles, grants, saved grants, and match data
+- **AI/LLM**: OpenAI for chat interactions and grant matching
+- **Email**: Firebase Extension (firestore-send-email) for automated grant notifications
+- **Authentication**: Firebase Auth
 
 ### Challenges
 
@@ -118,6 +124,30 @@ python backend/main.py
 
 If your backend uses `uvicorn`/`gunicorn`/`flask` adapt the command accordingly.
 
+### Email Notification System
+
+The project uses Firebase's **firestore-send-email** extension to automatically send grant notifications to NPOs:
+
+**How it works:**
+1. When matches are created, the system adds email documents to the Firestore `mail` collection
+2. The Firebase extension monitors this collection and sends emails automatically
+3. Email templates are stored in `backend/functions/template/` and rendered with grant data
+
+**Email Features:**
+- Mobile-responsive HTML templates with grant details
+- Personalized recipient information
+- Direct links to grant details and application pages
+- Automatic tracking of email delivery status
+
+**Configuration:**
+- Extension settings: `backend/extensions/firestore-send-email.env`
+- Email templates: `backend/functions/template/email_template_updated.html`
+- Test emails: Use the `EmailTester` component in the frontend (`frontend/src/components/features/email/EmailTester.tsx`)
+
+**Handlers:**
+- `send_email.py` - Manual email sending endpoint
+- `send_grant_emails.py` - Automated grant notification emails
+
 ### Cloud Functions
 
 Serverless handlers live in `backend/functions/`. See `backend/functions/requirements.txt` and `backend/functions/main.py` for details.
@@ -126,10 +156,31 @@ Serverless handlers live in `backend/functions/`. See `backend/functions/require
 
 ```
 Granted/
-├── frontend/                # Vite + React app
-├── backend/                 # Python backend and cloud functions
-│   └── functions/           # Serverless handlers
-├── assets/                  # Shared assets (images, demo data)
+├── frontend/                     # Vite + React + TypeScript app
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── features/         # Feature components (chat, email, grants)
+│   │   │   └── layout/           # Layout components (navbar, main layout)
+│   │   ├── contexts/             # React contexts (SavedGrants)
+│   │   ├── pages/                # Page components (Home, Discover, MyGrants, etc.)
+│   │   ├── services/             # API service layer (auth, email, grants, matches)
+│   │   └── utils/                # Utility functions
+│   └── public/                   # Static assets
+├── backend/
+│   ├── functions/                # Firebase Cloud Functions
+│   │   ├── handlers/
+│   │   │   ├── ai/               # Chat and AI-powered features
+│   │   │   ├── grants/           # Grant search and retrieval
+│   │   │   ├── matching/         # Matching engine (HTTP, Firestore, CRON)
+│   │   │   ├── npo/              # NPO profile management
+│   │   │   └── saved_grants/     # Saved grants functionality
+│   │   ├── services/             # Business logic services
+│   │   ├── template/             # Email templates
+│   │   └── tests/                # Unit tests
+│   ├── extensions/               # Firebase extension configs
+│   ├── firebase.json             # Firebase configuration
+│   └── firestore.rules           # Firestore security rules
+├── assets/                       # Shared assets (images, demo data)
 └── README.md
 ```
 
@@ -144,8 +195,9 @@ Granted/
 - Open an issue for new feature requests or bugs.
 - Create small, focused pull requests.
 
-### Contact
+### Connect with Us !
 
-If you need help, open an issue or contact the project maintainer.
-
----
+- Anson Ng (Frontend Engineer/Product Manager) - [linkedin](https://www.linkedin.com/in/iiansonng/)
+- Clarence Choo (Frontend Engineer/UIUX Designer) - [linkedin](https://www.linkedin.com/in/clarence-choo/)
+- Tan Yu Hoe (Backend Engineer/Database Administrator) - [linkedin](https://www.linkedin.com/in/yu-hoe-tan/)
+- Lionel Zheng (Material Scientist) - [linkedin](https://www.linkedin.com/in/lionel-zheng-06a5b9303/)
