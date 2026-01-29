@@ -1,10 +1,27 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import type { Sector } from '../types'
 import { fetchGrants } from '../services/grantsService'
 import { authFetch, getStoredIdToken, logoutLocal } from '../services/authService'
 import { getMatchedGrants } from '../utils/matching'
 import type { Grant, Organization } from '../types'
+
+const profileRequestCache = new Map<string, Promise<any>>()
+
+async function fetchProfileOnce(emailKey: string) {
+  if (profileRequestCache.has(emailKey)) return profileRequestCache.get(emailKey)!
+  const p = (async () => {
+    const res = await authFetch('https://get-npo-kun7hshp7q-as.a.run.app', { method: 'GET' })
+    const payload = await res.json()
+    if (!res.ok) throw new Error(payload?.error || 'Failed to load profile')
+    return payload
+  })()
+  profileRequestCache.set(emailKey, p)
+  return p.catch(err => {
+    profileRequestCache.delete(emailKey)
+    throw err
+  })
+}
 
 export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { setOrgProfile?: (p: Organization) => void, orgProfile?: Organization, user?: { name?: string; email?: string } | null }) {
   const [grants, setGrants] = useState<Grant[]>([])
@@ -29,11 +46,27 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
   const navigate = useNavigate()
   const aiProfile = (location.state as any)?.aiProfile
   const [aiSuggestion, setAiSuggestion] = useState<any | null>(null)
+  const loadedEmailRef = useRef<string | null>(null)
+  const hasLoadedRemoteProfileRef = useRef(false)
 
   const normalizeBeneficiaries = (value: any) => {
     if (Array.isArray(value)) return value.join(', ')
     if (typeof value === 'string') return value
     return value ? String(value) : ''
+  }
+
+  const applyProfileToState = (profile: Partial<Organization> & { beneficiaries?: any; annualBudget?: any; budget?: any; description?: any; mission?: any }) => {
+    const nextName = profile.name || ''
+    const nextSector = (profile.sector as Organization['sector']) || 'Social Service'
+    const nextMission = profile.description || profile.mission || ''
+    const nextBeneficiaries = normalizeBeneficiaries(profile.beneficiaries || '')
+    const nextBudget = (profile.annualBudget || profile.budget) ? String(profile.annualBudget || profile.budget) : ''
+
+    if (nextName !== orgName) setOrgName(nextName)
+    if (nextSector !== orgSector) setOrgSector(nextSector)
+    if (nextMission !== mission) setMission(nextMission)
+    if (nextBeneficiaries !== beneficiaries) setBeneficiaries(nextBeneficiaries)
+    if (nextBudget !== annualBudget) setAnnualBudget(nextBudget)
   }
 
   useEffect(() => {
@@ -43,6 +76,52 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
     }
     load()
   }, [])
+
+  // Load current user's NPO profile from the backend (if authenticated)
+  useEffect(() => {
+    let isCancelled = false
+    const loadProfile = async (emailKey: string) => {
+      const token = getStoredIdToken()
+      if (!token) return
+      // no loading state UI
+      try {
+        const payload = await fetchProfileOnce(emailKey)
+        if (isCancelled) return
+
+        const profile = (payload && payload.data) ? payload.data : payload
+        if (!profile) return
+
+        applyProfileToState(profile)
+        hasLoadedRemoteProfileRef.current = true
+
+        const updatedProfile = {
+          uen: profile.uen || 'T0000000X',
+          name: profile.name || '',
+          sector: profile.sector || 'Social Service',
+          mission: profile.description || profile.mission || '',
+          beneficiaries: profile.beneficiaries || [],
+          budget: profile.budget || profile.annualBudget || 0,
+          annualBudget: profile.annualBudget || profile.budget || '',
+        }
+
+        if (setOrgProfile) setOrgProfile(updatedProfile)
+
+        const email = user?.email || localStorage.getItem('granted_user_email')
+        localStorage.setItem('granted_org_profile', JSON.stringify({ ...updatedProfile, email }))
+      } catch (err: any) {
+        if (!isCancelled) {
+          setNotification({ type: 'error', message: 'Failed to load profile: ' + (err?.message || String(err)) })
+        }
+      } finally {
+        // no loading state UI
+      }
+    }
+    const emailKey = user?.email || localStorage.getItem('granted_user_email') || 'anonymous'
+    if (loadedEmailRef.current === emailKey) return
+    loadedEmailRef.current = emailKey
+    loadProfile(emailKey)
+    return () => { isCancelled = true }
+  }, [setOrgProfile, user?.email])
 
   useEffect(() => {
     if (aiProfile) {
@@ -59,18 +138,13 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
 
   // Populate fields from provided orgProfile prop or from locally stored user profile
   useEffect(() => {
+    if (hasLoadedRemoteProfileRef.current) return
     const storedOrgRaw = localStorage.getItem('granted_org_profile')
     if (storedOrgRaw) {
       try {
         const stored = JSON.parse(storedOrgRaw)
         if (!user?.email || !stored?.email || stored.email === user.email) {
-          setOrgName(stored.name || '')
-          setOrgSector(stored.sector || 'Social Service')
-          setMission(stored.mission || stored.description || '')
-          if (stored.beneficiaries) setBeneficiaries(normalizeBeneficiaries(stored.beneficiaries))
-          if (stored.budget || stored.annualBudget) {
-            setAnnualBudget(String(stored.annualBudget || stored.budget))
-          }
+          applyProfileToState(stored)
           return
         }
       } catch {
@@ -80,9 +154,7 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
 
     // prefer explicit orgProfile prop
     if (orgProfile) {
-      setOrgName(orgProfile.name || '')
-      setOrgSector(orgProfile.sector || 'Social Service')
-      setMission(orgProfile.mission || '')
+      applyProfileToState(orgProfile)
       // beneficiaries & budget may not be part of Organization type; try to read from localStorage/user
       const usersRaw = localStorage.getItem('granted_users')
       if (usersRaw && user?.email) {
@@ -90,8 +162,7 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
           const users = JSON.parse(usersRaw)
           const entry = users[user.email]
           if (entry?.profile) {
-            setBeneficiaries(normalizeBeneficiaries(entry.profile.beneficiaries))
-            if (entry.profile.budget) setAnnualBudget(String(entry.profile.budget))
+            applyProfileToState(entry.profile)
           }
         } catch {
           // ignore parse errors
@@ -108,18 +179,14 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
           const users = JSON.parse(usersRaw)
           const entry = users[user.email]
           if (entry?.profile) {
-            setOrgName(entry.profile.name || '')
-            setOrgSector(entry.profile.sector || 'Social Service')
-            setMission(entry.profile.mission || entry.profile.description || '')
-            setBeneficiaries(normalizeBeneficiaries(entry.profile.beneficiaries))
-            if (entry.profile.budget) setAnnualBudget(String(entry.profile.budget))
+            applyProfileToState(entry.profile)
           }
         } catch {
           // ignore
         }
       }
     }
-  }, [orgProfile, user])
+  }, [orgProfile?.name, orgProfile?.sector, orgProfile?.mission, user?.email])
 
   // Auto-dismiss notifications after a short duration
   useEffect(() => {
@@ -332,7 +399,9 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+        </div>
         <Link to="/" className="text-sm text-slate-500 hover:underline">Back to app</Link>
       </div>
 
