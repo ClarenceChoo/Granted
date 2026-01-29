@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import type { Sector } from '../types'
 import { fetchGrants } from '../services/grantsService'
-import { sendTopGrantMatches_viaApi } from '../services/emailService'
 import { authFetch, getStoredIdToken } from '../services/authService'
 import { getMatchedGrants } from '../utils/matching'
 import type { Grant, Organization } from '../types'
@@ -139,18 +138,32 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
       }
     }
 
-    setSending(true)
-    const res = await sendTopGrantMatches_viaApi(recipient, org, topGrants)
-    setSending(false)
+    const token = getStoredIdToken()
+    if (!token) {
+      setNotification({ type: 'error', message: 'Please sign in to send matched grants email.' })
+      return
+    }
 
-    if (res.success) {
+    setSending(true)
+    try {
+      const res = await authFetch('https://send-grant-emails-manual-kun7hshp7q-as.a.run.app', {
+        method: 'POST',
+      })
+
+      if (!res.ok) {
+        const txt = await res.text()
+        throw new Error(`${res.status} ${txt}`)
+      }
+
       setNotification({ type: 'success', message: `Email sent to ${recipient}.` })
-    } else {
+    } catch (err: any) {
       setNotification({ type: 'error', message: 'Failed to send — preview opened in a new tab.' })
       const previewHtml = `<html><body><h2>Preview: Top ${topGrants.length} Grants for ${org.name}</h2>${topGrants.map(g=>`<h3>${g.name}</h3><p>${g.description}</p>`).join('')}</body></html>`
       const blob = new Blob([previewHtml], { type: 'text/html' })
       const url = URL.createObjectURL(blob)
       window.open(url, '_blank')
+    } finally {
+      setSending(false)
     }
   }
 

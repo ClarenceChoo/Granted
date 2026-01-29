@@ -1,4 +1,4 @@
-import { Clock, Percent, AlertCircle, CheckCircle } from 'lucide-react'
+import { Clock, AlertCircle, CheckCircle } from 'lucide-react'
 import type { Grant } from '../../../types'
 import { Link } from 'react-router-dom'
 
@@ -6,9 +6,19 @@ interface GrantCardProps {
     grant: Grant
     isSaved?: boolean
     onToggleSave?: (grantId: string) => Promise<void> | void
+    linkState?: any
+    matchBadgeLabel?: string
+    showMatchScore?: boolean
 }
 
-export default function GrantCard({ grant, isSaved = false, onToggleSave }: GrantCardProps) {
+export default function GrantCard({
+    grant,
+    isSaved = false,
+    onToggleSave,
+    linkState,
+    matchBadgeLabel,
+    showMatchScore = true
+}: GrantCardProps) {
     const getStatusColor = (status?: string) => {
         switch (status?.toLowerCase()) {
             case 'green':
@@ -38,6 +48,7 @@ export default function GrantCard({ grant, isSaved = false, onToggleSave }: Gran
     return (
         <Link 
             to={`/grant/${grant.id}`} 
+            state={linkState}
             className={`group relative bg-white rounded-2xl border border-slate-200 p-8 hover:shadow-2xl hover:shadow-slate-200/50 transition duration-300 flex flex-col h-full animate-fadeIn ${
                 isClosedStatus ? 'opacity-75' : 'hover:border-[#1E3A8A]/20'
             }`}
@@ -60,8 +71,8 @@ export default function GrantCard({ grant, isSaved = false, onToggleSave }: Gran
                 </button>
             )}
             {/* Agency Icon and Status */}
-            <div className="flex justify-between items-start mb-6">
-                <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
+                <div className="flex items-center gap-3 min-w-0">
                     {grant.agencyIconUrl && (
                         <img 
                             src={grant.agencyIconUrl} 
@@ -72,24 +83,18 @@ export default function GrantCard({ grant, isSaved = false, onToggleSave }: Gran
                             }}
                         />
                     )}
-                    <div className={`px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider border flex items-center gap-1.5 ${getStatusColor(grant.status)}`}>
+                    <div className={`px-3 py-2 rounded-xl text-[11px] font-semibold tracking-wide border flex items-center gap-1.5 leading-[1.25] whitespace-normal break-words ${getStatusColor(grant.status)}`}>
                         {getStatusIcon(grant.status)}
                         {grant.agency}
                     </div>
                 </div>
-                {grant.matchScore !== undefined && (
-                    <div className="flex items-center gap-1.5 text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100 shadow-sm">
-                        <Percent className="w-3.5 h-3.5" />
-                        <span className="text-xs font-bold">{grant.matchScore}% Match</span>
-                    </div>
-                )}
             </div>
 
-            <h3 className="text-2xl font-bold text-slate-900 group-hover:text-[#1E3A8A] transition-colors mb-4 line-clamp-2">
+            <h3 className="text-2xl font-bold text-slate-900 group-hover:text-[#1E3A8A] transition-colors mb-4 line-clamp-2 leading-[1.4] pb-1 pt-0.5">
                 {grant.name}
             </h3>
 
-            <p className="text-slate-500 text-sm mb-6 line-clamp-3 flex-grow">
+            <p className="text-slate-500 text-sm leading-[1.7] mb-6 line-clamp-4 pb-1 pt-0.5 flex-grow">
                 {grant.description}
             </p>
 
@@ -110,8 +115,20 @@ export default function GrantCard({ grant, isSaved = false, onToggleSave }: Gran
             )}
 
             <div className="mt-auto">
-                <div className="flex items-baseline gap-1 mb-6">
+                <div className="flex items-end justify-between gap-3 mb-6">
                     <span className="text-2xl font-bold text-slate-900 tracking-tight">{grant.quantum}</span>
+                    {matchBadgeLabel ? (
+                        <div className="ml-auto inline-flex items-center text-emerald-800 bg-emerald-50/80 px-3 py-1.5 rounded-lg border border-emerald-100 shadow-sm whitespace-nowrap">
+                            <span className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700/90">
+                                {matchBadgeLabel}
+                            </span>
+                        </div>
+                    ) : (showMatchScore && grant.matchScore !== undefined) ? (
+                        <div className="ml-auto inline-flex items-center gap-2 text-emerald-800 bg-emerald-50/80 px-3 py-1.5 rounded-lg border border-emerald-100 shadow-sm whitespace-nowrap">
+                            <span className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700/90">Match</span>
+                            <span className="text-xs font-bold leading-none">{grant.matchScore}%</span>
+                        </div>
+                    ) : null}
                 </div>
 
                 <div className="flex items-center gap-2 text-sm text-slate-500 pt-5 border-t border-slate-100">

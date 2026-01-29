@@ -14,12 +14,15 @@ import { GRANTS_DATA } from './data'
 import type { Organization, Grant } from './types'
 import { getMatchedGrants } from './utils/matching'
 import { fetchGrants } from './services/grantsService'
+import { fetchMatchedGrants, type MatchResult } from './services/matchesService'
 
 export default function App() {
   const [isChatOpen, setIsChatOpen] = useState(false)
-  const [isSubscribed, setIsSubscribed] = useState(false)
   const [grants, setGrants] = useState<Grant[]>([])
   const [isLoadingGrants, setIsLoadingGrants] = useState(true)
+  const [matchedGrants, setMatchedGrants] = useState<Grant[]>([])
+  const [isLoadingMatches, setIsLoadingMatches] = useState(false)
+  const [matchesError, setMatchesError] = useState<string | null>(null)
 
   // Simulated auth state for demo
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -67,10 +70,54 @@ export default function App() {
   }, [])
 
   // Derived State: Calculate matches based on current profile
-  const matchedGrants = useMemo(() => {
+  const fallbackMatchedGrants = useMemo(() => {
     if (!isOnboardingComplete) return grants.slice(0, 3).map(g => ({ ...g, matchScore: 90 }));
     return getMatchedGrants(grants, orgProfile);
   }, [grants, orgProfile, isOnboardingComplete])
+
+  useEffect(() => {
+    let isCancelled = false
+
+    const loadMatches = async () => {
+      if (!isAuthenticated) {
+        setMatchedGrants([])
+        setMatchesError(null)
+        return
+      }
+      if (isLoadingGrants) return
+      setIsLoadingMatches(true)
+      setMatchesError(null)
+      try {
+        const fetched = await fetchMatchedGrants()
+        const hydrated = hydrateMatchesWithGrants(fetched, grants)
+        if (!isCancelled) setMatchedGrants(hydrated)
+      } catch (err: any) {
+        if (!isCancelled) {
+          setMatchesError(err?.message || 'Failed to load matches')
+          setMatchedGrants([])
+        }
+      } finally {
+        if (!isCancelled) setIsLoadingMatches(false)
+      }
+    }
+
+    loadMatches()
+    return () => { isCancelled = true }
+  }, [isAuthenticated, grants, isLoadingGrants])
+
+  const displayedMatchedGrants = (!isAuthenticated || matchesError) ? fallbackMatchedGrants : matchedGrants
+  const isHomeLoading = isLoadingGrants || (isAuthenticated && isLoadingMatches)
+
+  function hydrateMatchesWithGrants(matches: MatchResult[], allGrants: Grant[]): Grant[] {
+    const grantMap = new Map(allGrants.map(g => [g.id, g]))
+    return matches
+      .map(match => {
+        const base = grantMap.get(match.grantId)
+        if (!base) return null
+        return { ...base, matchScore: match.similarityScore ?? base.matchScore, matchReasoning: match.reasoning }
+      })
+      .filter(Boolean) as Grant[]
+  }
 
   return (
     <BrowserRouter>
@@ -88,13 +135,12 @@ export default function App() {
         <Routes>
           <Route path="/" element={
             <Home
-              matchedGrants={matchedGrants}
+              matchedGrants={displayedMatchedGrants}
               orgProfile={orgProfile}
               onOpenChat={() => setIsChatOpen(true)}
-              isSubscribed={isSubscribed}
-              setIsSubscribed={setIsSubscribed}
               isComplete={isOnboardingComplete}
-              isLoading={isLoadingGrants}
+              isLoading={isHomeLoading}
+              isAuthenticated={isAuthenticated}
             />
           } />
           <Route path="/discover" element={<Discover />} />

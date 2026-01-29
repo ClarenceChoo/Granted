@@ -17,6 +17,7 @@ export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: an
     const initialMode = location.hash === '#register' || !!prefillData ? 'register' : 'login'
 
     const [mode, setMode] = useState<'login' | 'register'>(initialMode)
+    const [isSubmitting, setIsSubmitting] = useState(false)
 
     // Initialize empty if we are going to stream, otherwise standard defaults
     const [formData, setFormData] = useState({
@@ -85,22 +86,24 @@ export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: an
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+        if (isSubmitting) return
+        setIsSubmitting(true)
 
-        if (mode === 'register') {
-            // Build payload for backend; AI prefill (location.state) may contain extra fields
-            const aiData = (prefillData || (location.state as any)) as any
-            const payload: any = {
-                email: formData.email,
-                password: formData.password,
-                name: formData.name,
-                uen: formData.uen,
-                sector: formData.sector,
-                description: aiData?.mission || aiData?.description || '',
-                beneficiaries: aiData?.beneficiaries || [],
-                budget: aiData?.budget || 0,
-            }
+        try {
+            if (mode === 'register') {
+                // Build payload for backend; AI prefill (location.state) may contain extra fields
+                const aiData = (prefillData || (location.state as any)) as any
+                const payload: any = {
+                    email: formData.email,
+                    password: formData.password,
+                    name: formData.name,
+                    uen: formData.uen,
+                    sector: formData.sector,
+                    description: aiData?.mission || aiData?.description || '',
+                    beneficiaries: aiData?.beneficiaries || [],
+                    budget: aiData?.budget || 0,
+                }
 
-            try {
                 const res = await fetch('https://create-npo-kun7hshp7q-as.a.run.app', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -121,28 +124,24 @@ export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: an
                 users[formData.email] = { password: formData.password, profile: { email: formData.email, name: formData.name, uen: formData.uen, sector: formData.sector, ...created } }
                 localStorage.setItem('granted_users', JSON.stringify(users))
 
-                    // After creating the NPO on your backend, call the login endpoint to obtain idToken/refreshToken
-                    try {
-                        await loginNPO(formData.email, formData.password)
-                        onAuthSuccess?.(users[formData.email].profile)
-                        alert('Successfully Registered and Logged In!')
-                        navigate('/')
-                    } catch (loginErr: any) {
-                        // registration succeeded but login failed — still inform user
-                        console.warn('Registered but login failed', loginErr)
-                        onAuthSuccess?.(users[formData.email].profile)
-                        alert('Registered successfully. Please sign in.')
-                        navigate('/signin')
-                    }
-            } catch (err: any) {
-                alert('Registration error: ' + (err?.message || String(err)))
+                // After creating the NPO on your backend, call the login endpoint to obtain idToken/refreshToken
+                try {
+                    await loginNPO(formData.email, formData.password)
+                    onAuthSuccess?.(users[formData.email].profile)
+                    alert('Successfully Registered and Logged In!')
+                    navigate('/')
+                } catch (loginErr: any) {
+                    // registration succeeded but login failed — still inform user
+                    console.warn('Registered but login failed', loginErr)
+                    onAuthSuccess?.(users[formData.email].profile)
+                    alert('Registered successfully. Please sign in.')
+                    navigate('/signin')
+                }
+
+                return
             }
 
-            return
-        }
-
-        // Login mode: call backend login endpoint to get idToken etc.
-        try {
+            // Login mode: call backend login endpoint to get idToken etc.
             await loginNPO(formData.email, formData.password)
             // backend returned tokens stored by loginNPO; no Firebase exchange required
 
@@ -154,10 +153,9 @@ export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: an
         } catch (err: any) {
             alert('Login failed: ' + (err?.message || String(err)))
             return
+        } finally {
+            setIsSubmitting(false)
         }
-
-        alert('No local account found for this email. Please register first, or provide a server-side sign-in API.')
-        return
     }
 
     // Dynamic class for pre-filled fields to give them a "glow"
@@ -234,12 +232,14 @@ export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: an
                         <div className="flex gap-4 p-1 bg-slate-100 rounded-lg inline-flex">
                             <button
                                 onClick={() => setMode('login')}
+                                disabled={isSubmitting}
                                 className={`px-4 py-2 rounded-md text-sm font-medium transition ${mode === 'login' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                             >
                                 Sign In
                             </button>
                             <button
                                 onClick={() => setMode('register')}
+                                disabled={isSubmitting}
                                 className={`px-4 py-2 rounded-md text-sm font-medium transition ${mode === 'register' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                             >
                                 Sign Up
@@ -250,7 +250,8 @@ export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: an
                     <button
                         type="button"
                         onClick={handleDemoFill}
-                        className="text-xs text-indigo-400 hover:text-indigo-600 mb-6 flex items-center gap-1 font-medium -mt-4 transition-colors"
+                        disabled={isSubmitting}
+                        className="text-xs text-indigo-400 hover:text-indigo-600 mb-6 flex items-center gap-1 font-medium -mt-4 transition-colors disabled:opacity-60 disabled:pointer-events-none"
                     >
                         <Wand2 className="w-3 h-3" /> Demo: Fill Form
                     </button>
@@ -266,111 +267,116 @@ export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: an
                     )}
 
                     <form onSubmit={handleSubmit} className="space-y-4">
-                        {mode === 'register' && (
-                            <>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Organization Name</label>
-                                    <div className="relative">
-                                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                                        <input
-                                            type="text"
-                                            name="name"
-                                            value={formData.name}
+                        <fieldset disabled={isSubmitting} className="space-y-4">
+                            {mode === 'register' && (
+                                <>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Organization Name</label>
+                                        <div className="relative">
+                                            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                                            <input
+                                                type="text"
+                                                name="name"
+                                                value={formData.name}
+                                                onChange={handleInputChange}
+                                                className={getFieldClass('name')}
+                                                placeholder="Organization Name"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">UEN</label>
+                                        <div className="relative">
+                                            <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                                            <input
+                                                type="text"
+                                                name="uen"
+                                                value={formData.uen}
+                                                onChange={handleInputChange}
+                                                className={getFieldClass('uen')}
+                                                placeholder="T08GB0021K"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Sector</label>
+                                        <div className="relative">
+                                            <select
+                                                name="sector"
+                                                value={formData.sector}
+                                                onChange={handleInputChange}
+                                                className={`${getFieldClass('sector')} bg-white pl-3`}
+                                            >
+                                                {['Social Service', 'Arts & Heritage', 'Sports', 'Community', 'Education', 'Health', 'Environment', 'Other'].map(s => (
+                                                    <option key={s} value={s}>{s}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="animate-in fade-in slide-in-from-bottom-2 duration-1000 delay-100">
+                                        <label className="block text-sm font-medium text-slate-700 mb-1 flex justify-between">
+                                            <span>Mission Statement</span>
+                                            {effectivePrefill?.mission && <span className="text-xs text-indigo-600 font-medium flex items-center gap-1"><Sparkles className="w-3 h-3" /> AI Generated</span>}
+                                        </label>
+                                        <textarea
+                                            name="mission"
+                                            value={formData.mission}
                                             onChange={handleInputChange}
-                                            className={getFieldClass('name')}
-                                            placeholder="Organization Name"
-                                            required
+                                            rows={3}
+                                            className={getFieldClass('mission')}
+                                            placeholder="Briefly describe your organization's mission..."
                                         />
                                     </div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">UEN</label>
-                                    <div className="relative">
-                                        <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                                        <input
-                                            type="text"
-                                            name="uen"
-                                            value={formData.uen}
-                                            onChange={handleInputChange}
-                                            className={getFieldClass('uen')}
-                                            placeholder="T08GB0021K"
-                                            required
-                                        />
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Sector</label>
-                                    <div className="relative">
-                                        <select
-                                            name="sector"
-                                            value={formData.sector}
-                                            onChange={handleInputChange}
-                                            className={`${getFieldClass('sector')} bg-white pl-3`}
-                                        >
-                                            {['Social Service', 'Arts & Heritage', 'Sports', 'Community', 'Education', 'Health', 'Environment', 'Other'].map(s => (
-                                                <option key={s} value={s}>{s}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </div>
-                                <div className="animate-in fade-in slide-in-from-bottom-2 duration-1000 delay-100">
-                                    <label className="block text-sm font-medium text-slate-700 mb-1 flex justify-between">
-                                        <span>Mission Statement</span>
-                                        {effectivePrefill?.mission && <span className="text-xs text-indigo-600 font-medium flex items-center gap-1"><Sparkles className="w-3 h-3" /> AI Generated</span>}
-                                    </label>
-                                    <textarea
-                                        name="mission"
-                                        value={formData.mission}
+                                </>
+                            )}
+
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
+                                <div className="relative">
+                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        value={formData.email}
                                         onChange={handleInputChange}
-                                        rows={3}
-                                        className={getFieldClass('mission')}
-                                        placeholder="Briefly describe your organization's mission..."
+                                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] focus:border-transparent transition"
+                                        placeholder="you@example.org"
+                                        required
                                     />
                                 </div>
-                            </>
-                        )}
-
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
-                            <div className="relative">
-                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                                <input
-                                    type="email"
-                                    name="email"
-                                    value={formData.email}
-                                    onChange={handleInputChange}
-                                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] focus:border-transparent transition"
-                                    placeholder="you@example.org"
-                                    required
-                                />
                             </div>
-                        </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">
-                                Password
-                                {mode === 'login' && <a href="#" className="float-right text-xs text-[#1E3A8A] font-semibold hover:underline">Forgot?</a>}
-                            </label>
-                            <div className="relative">
-                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                                <input
-                                    type="password"
-                                    name="password"
-                                    value={formData.password}
-                                    onChange={handleInputChange}
-                                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] focus:border-transparent transition"
-                                    placeholder="••••••••"
-                                    required
-                                />
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">
+                                    Password
+                                    {mode === 'login' && <a href="#" className="float-right text-xs text-[#1E3A8A] font-semibold hover:underline">Forgot?</a>}
+                                </label>
+                                <div className="relative">
+                                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                                    <input
+                                        type="password"
+                                        name="password"
+                                        value={formData.password}
+                                        onChange={handleInputChange}
+                                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] focus:border-transparent transition"
+                                        placeholder="••••••••"
+                                        required
+                                    />
+                                </div>
                             </div>
-                        </div>
+                        </fieldset>
 
                         <button
                             type="submit"
-                            className="w-full bg-[#0F766E] text-white font-bold py-3 rounded-xl hover:bg-[#0d6963] transition shadow-lg shadow-[#0F766E]/20 flex items-center justify-center gap-2 mt-6"
+                            disabled={isSubmitting}
+                            className="w-full bg-[#0F766E] text-white font-bold py-3 rounded-xl hover:bg-[#0d6963] transition shadow-lg shadow-[#0F766E]/20 flex items-center justify-center gap-2 mt-6 disabled:opacity-70 disabled:pointer-events-none"
                         >
-                            {mode === 'login' ? 'Sign In' : 'Create Account'}
-                            <ChevronRight className="w-4 h-4" />
+                            {isSubmitting
+                                ? (mode === 'login' ? 'Signing In...' : 'Creating Account...')
+                                : (mode === 'login' ? 'Sign In' : 'Create Account')}
+                            {!isSubmitting && <ChevronRight className="w-4 h-4" />}
                         </button>
                     </form>
 
@@ -378,6 +384,7 @@ export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: an
                         {mode === 'login' ? "Don't have an account?" : "Already have an account?"}
                         <button
                             onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
+                            disabled={isSubmitting}
                             className="ml-1 text-[#1E3A8A] font-semibold hover:underline"
                         >
                             {mode === 'login' ? 'Sign Up' : 'Log In'}
