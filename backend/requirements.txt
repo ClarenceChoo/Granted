@@ -1,7 +1,0 @@
-google-generativeai
-fastapi
-uvicorn
-python-multipart
-python-dotenv
-resend
-email-validator

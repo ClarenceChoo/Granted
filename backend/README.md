@@ -63,7 +63,9 @@ AI-powered grant matching platform for non-profit organisations (NPOs) in Singap
 - **Runtime**: Python 3.13, Firebase Functions (2nd Gen)
 - **Database**: Cloud Firestore (NoSQL)
 - **Authentication**: Firebase Auth (Email/Password)
-- **AI/ML**: OpenAI GPT-4o-2024-08-06 (Structured Outputs)
+- **AI/ML**: 
+  - OpenAI GPT-4o-2024-08-06 (Structured Outputs for matching)
+  - Google Generative AI Gemini (Chat & refinement)
 - **Email**: Firestore Send Email Extension
 - **Templates**: Jinja2 3.1.6 (HTML email rendering)
 - **Secrets**: Google Cloud Secret Manager
@@ -76,10 +78,13 @@ AI-powered grant matching platform for non-profit organisations (NPOs) in Singap
 - **update_npo**: Update NPO profile
 - **get_npo**: Retrieve NPO details
 - **login_npo**: Authenticate and return JWT tokens
+- **deactivate_npo**: Deactivate NPO account (deletes Firestore data, matches, and disables Auth)
 
-### 2. Grant Management (`/handlers`)
+### 2. Grant Management (`/handlers/grants`)
 - **sync_grants_daily**: CRON job to sync grants (daily 6AM SGT)
 - **sync_grants_manual**: HTTP trigger for manual grant sync
+- **search_grants**: Search, filter, and paginate grants (full-text search, filters, sorting)
+- **get_grant**: Get detailed information about a specific grant
 - **save_grant**: Add grant to NPO's saved list (max 5)
 - **unsave_grant**: Remove grant from saved list
 - **get_saved_grants**: Retrieve NPO's saved grants
@@ -100,7 +105,7 @@ AI-powered grant matching platform for non-profit organisations (NPOs) in Singap
 
 ### 4. Email Notification Service (`/handlers/send_grant_emails.py`)
 **Triggers:**
-- **send_weekly_grant_emails**: CRON (weekly, Mondays 6AM SGT)
+- **send_weekly_grant_emails**: CRON (weekly, Mondays 9AM SGT)
 - **send_grant_emails_manual**: HTTP POST endpoint (optional npo_id param)
 
 **Features:**
@@ -116,6 +121,19 @@ AI-powered grant matching platform for non-profit organisations (NPOs) in Singap
 - Requires Firebase Auth JWT token
 - Authorization check (users can only access their own matches)
 - Returns match data with grant_id, similarity_score, and reasoning
+
+### 6. AI Chat Features (`/handlers/ai`)
+**Powered by Google Gemini**
+
+- **ai_chat**: Free-form conversational AI for grant-related questions
+  - Supports chat history and context
+  - NPO-specific recommendations
+  - Grant discovery and advice
+
+- **chat_refine**: AI-powered mission statement refinement
+  - Refines NPO mission/description
+  - Generates grant opportunity strategy
+  - Returns structured JSON with refined content
 
 ## Data Models
 
@@ -182,6 +200,9 @@ mail/{id}
 | `/update_npo` | PUT | Update NPO profile |
 | `/get_npo` | GET | Get NPO by UID |
 | `/login_npo` | POST | Login and get JWT token |
+| `/deactivate_npo` | DELETE | Deactivate NPO account |
+| `/search_grants` | GET | Search, filter & paginate grants |
+| `/get_grant` | GET | Get detailed grant information |
 | `/save_grant` | POST | Save grant to NPO |
 | `/unsave_grant` | DELETE | Remove saved grant |
 | `/get_saved_grants` | GET | Get NPO's saved grants |
@@ -189,12 +210,15 @@ mail/{id}
 | `/sync_grants_manual` | POST | Manual grant sync |
 | `/match_grants_manual` | POST | Trigger AI matching |
 | `/send_grant_emails_manual` | POST | Send grant match emails (optional npo_id param) |
+| `/ai_chat` | POST | Free-form AI chat for grant questions |
+| `/chat_refine` | POST | AI-powered mission refinement |
 
 ## Secrets Configuration
 
 Managed via Firebase Secret Manager:
 - `WEB_API_KEY`: Firebase Web API key for authentication
 - `OPENAI_API_KEY`: OpenAI API key for grant matching
+- `GEMINI_API_KEY`: Google Generative AI API key for chat features
 
 ## Deployment
 
@@ -210,9 +234,12 @@ firebase deploy --only functions:match_grants_manual
 
 ✅ **Email/Password Authentication** with JWT tokens  
 ✅ **AI-Powered Grant Matching** using OpenAI structured outputs  
+✅ **Conversational AI Chat** with Google Gemini for grant advice  
+✅ **AI Mission Refinement** to optimize NPO profiles  
+✅ **Advanced Grant Search** with filters, sorting, and pagination  
 ✅ **Automated Matching** via CRON jobs and Firestore triggers  
 ✅ **Personalized Email Notifications** with responsive HTML templates  
-✅ **Weekly Grant Updates** sent to NPOs every Monday at 6AM SGT  
+✅ **Weekly Grant Updates** sent to NPOs every Monday at 9AM SGT  
 ✅ **Comprehensive Logging** for AI inference and debugging  
 ✅ **Secrets Management** via Google Cloud Secret Manager  
 ✅ **CORS Support** for cross-origin requests  
