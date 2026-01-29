@@ -434,28 +434,28 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
 
         <div className="grid md:grid-cols-2 gap-3 mb-4">
           <div>
-            <label className="text-xs font-semibold">Recipient</label>
-            <input value={recipient} readOnly className="p-2 border rounded w-full bg-slate-50" />
+            <label htmlFor="admin-recipient" className="text-xs font-semibold">Recipient</label>
+            <input id="admin-recipient" name="adminRecipient" value={recipient} readOnly className="p-2 border rounded w-full bg-slate-50" />
           </div>
           <div>
-            <label className="text-xs font-semibold">Organization Name</label>
-            <input value={orgName} onChange={e=>setOrgName(e.target.value)} className="p-2 border rounded w-full" />
+            <label htmlFor="admin-org-name" className="text-xs font-semibold">Organization Name</label>
+            <input id="admin-org-name" name="orgName" value={orgName} onChange={e=>setOrgName(e.target.value)} className="p-2 border rounded w-full" />
           </div>
           <div>
-            <label className="text-xs font-semibold">Sector</label>
-            <input value={orgSector} onChange={e=>setOrgSector(e.target.value as Sector)} className="p-2 border rounded w-full" />
+            <label htmlFor="admin-sector" className="text-xs font-semibold">Sector</label>
+            <input id="admin-sector" name="sector" value={orgSector} onChange={e=>setOrgSector(e.target.value as Sector)} className="p-2 border rounded w-full" />
           </div>
           <div>
-            <label className="text-xs font-semibold">Annual Budget</label>
-            <input value={annualBudget} onChange={e=>setAnnualBudget(e.target.value)} className="p-2 border rounded w-full" />
+            <label htmlFor="admin-annual-budget" className="text-xs font-semibold">Annual Budget</label>
+            <input id="admin-annual-budget" name="annualBudget" value={annualBudget} onChange={e=>setAnnualBudget(e.target.value)} className="p-2 border rounded w-full" />
           </div>
           <div className="md:col-span-2">
-            <label className="text-xs font-semibold">Mission / What you do</label>
-            <textarea value={mission} onChange={e=>setMission(e.target.value)} className="p-2 border rounded w-full h-24" />
+            <label htmlFor="admin-mission" className="text-xs font-semibold">Mission / What you do</label>
+            <textarea id="admin-mission" name="mission" value={mission} onChange={e=>setMission(e.target.value)} className="p-2 border rounded w-full h-24" />
           </div>
           <div className="md:col-span-2">
-            <label className="text-xs font-semibold">Primary Beneficiaries</label>
-            <input value={beneficiaries} onChange={e=>setBeneficiaries(e.target.value)} className="p-2 border rounded w-full" />
+            <label htmlFor="admin-beneficiaries" className="text-xs font-semibold">Primary Beneficiaries</label>
+            <input id="admin-beneficiaries" name="beneficiaries" value={beneficiaries} onChange={e=>setBeneficiaries(e.target.value)} className="p-2 border rounded w-full" />
           </div>
         </div>
 

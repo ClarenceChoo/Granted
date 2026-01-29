@@ -1,8 +1,9 @@
-import { Search, Bell, LogOut } from 'lucide-react'
+import { Bell, LogOut } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
 // Firebase removed: rely on backend tokens stored locally
 import type { Dispatch, SetStateAction } from 'react'
+import grantedLogo from '../../assets/granted logo.svg'
 
 export default function Navbar({
     isAuthenticated = false,
@@ -57,9 +58,9 @@ export default function Navbar({
         <nav className="sticky top-0 z-40 bg-white shadow-md border-b border-slate-100">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center h-16">
-                    <Link to="/" className="flex items-center gap-2">
-                        <div className="bg-[#0F766E] p-1.5 rounded-lg">
-                            <Search className="w-5 h-5 text-white" />
+                    <Link to="/" className="flex items-center gap-3">
+                        <div className="p-0">
+                            <img src={grantedLogo} alt="Granted logo" className="w-20 h-20 object-contain" />
                         </div>
                         <span className="text-xl font-bold tracking-tight text-[#0F172A]">Granted</span>
                     </Link>
