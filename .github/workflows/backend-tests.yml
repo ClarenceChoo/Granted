@@ -39,7 +39,7 @@ jobs:
       - name: Install dependencies
         working-directory: ./backend
         run: |
-          uv sync
+          uv sync --dev
       
       - name: Run unit tests
         working-directory: ./backend/functions
