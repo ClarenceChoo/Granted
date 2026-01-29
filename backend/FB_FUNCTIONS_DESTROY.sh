@@ -34,6 +34,8 @@ echo ""
 
 firebase functions:delete \
   create_npo \
+  deactivate_npo \
+  get_grant \
   get_matches \
   get_npo \
   get_saved_grants \
@@ -44,6 +46,7 @@ firebase functions:delete \
   on_grant_change \
   on_npo_change \
   save_grant \
+  search_grants \
   send_grant_emails_manual \
   send_hello_world_email \
   send_weekly_grant_emails \
