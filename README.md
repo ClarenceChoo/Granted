@@ -1,6 +1,6 @@
 # Granted — Hackathon Project & Developer Guide
 
-![Landing image](assets/landing-page.png)
+![Landing image](assets/landing-page-v2.png)
 
 ## Hackathon Project — Overview
 
