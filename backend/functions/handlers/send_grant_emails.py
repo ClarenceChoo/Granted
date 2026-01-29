@@ -10,7 +10,7 @@ from pathlib import Path
 from firebase_functions import https_fn, scheduler_fn
 from firebase_admin import firestore
 from jinja2 import Environment, FileSystemLoader
-from typing import List, Dict, Any, Optional
+from typing import Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
 

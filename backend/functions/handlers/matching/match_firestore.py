@@ -219,7 +219,7 @@ def on_grant_change(
         )
         
         logger.info(
-            f"[Firestore Trigger] Batch re-matching complete",
+            "[Firestore Trigger] Batch re-matching complete",
             extra={
                 "grant_id": grant_id,
                 "processed": result["processed"],
@@ -235,7 +235,7 @@ def on_grant_change(
         
     except Exception as e:
         logger.error(
-            f"[Firestore Trigger] Error during batch re-matching",
+            "[Firestore Trigger] Error during batch re-matching",
             extra={"grant_id": grant_id, "error": str(e)},
             exc_info=True
         )

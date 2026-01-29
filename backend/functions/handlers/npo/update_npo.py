@@ -106,8 +106,7 @@ def update_npo(req: https_fn.Request) -> https_fn.Response:
                 mimetype="application/json"
             )
         
-        # Fields that can be updated
-        allowed_fields = ["name", "sector", "description", "beneficiaries", "budget"]
+        # Validate and collect fields to update
         update_data = {}
         errors = []
         

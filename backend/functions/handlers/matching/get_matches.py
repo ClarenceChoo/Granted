@@ -4,7 +4,6 @@ HTTP function for retrieving NPO's grant matches from Firestore.
 
 import json
 import logging
-from typing import cast
 from firebase_functions import https_fn
 from firebase_admin import firestore
 from google.cloud.firestore_v1 import DocumentSnapshot

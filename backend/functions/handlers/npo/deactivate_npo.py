@@ -6,7 +6,6 @@ import json
 import logging
 from firebase_functions import https_fn
 from firebase_admin import firestore, auth
-from google.cloud.firestore import SERVER_TIMESTAMP
 
 from .utils import get_cors_headers
 
@@ -76,15 +75,6 @@ def deactivate_npo(req: https_fn.Request) -> https_fn.Response:
                 headers=get_cors_headers(),
                 mimetype="application/json"
             )
-        
-        # Parse request body for optional reason
-        reason = None
-        try:
-            if req.get_data():
-                data = req.get_json()
-                reason = data.get("reason", "User requested account deactivation")
-        except Exception:
-            reason = "User requested account deactivation"
         
         # Get Firestore client
         db = firestore.client()

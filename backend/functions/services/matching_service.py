@@ -5,7 +5,6 @@ This service matches NPOs to relevant grants based on their descriptions,
 sectors, beneficiaries, and other criteria using OpenAI's structured outputs.
 """
 
-import json
 import logging
 from datetime import datetime, timezone
 from typing import Optional
@@ -219,7 +218,7 @@ Analyze and return EXACTLY 3 grants ranked by relevance. You must provide 3 matc
 
         try:
             logger.info(
-                f"[AI Inference] Sending request to OpenAI",
+                "[AI Inference] Sending request to OpenAI",
                 extra={
                     "model": self.MODEL,
                     "npo_id": npo_id,
@@ -249,13 +248,13 @@ Analyze and return EXACTLY 3 grants ranked by relevance. You must provide 3 matc
             # Validate result
             if not result or not result.matches:
                 logger.error(
-                    f"[AI Inference] Empty or invalid response from OpenAI",
+                    "[AI Inference] Empty or invalid response from OpenAI",
                     extra={"npo_id": npo_id}
                 )
                 return None
             
             logger.info(
-                f"[AI Inference] Successfully received response from OpenAI",
+                "[AI Inference] Successfully received response from OpenAI",
                 extra={
                     "npo_id": npo_id,
                     "duration_ms": duration_ms,
@@ -500,7 +499,7 @@ def match_all_npos(
         Summary of matching results
     """
     logger.info(
-        f"[Matching] Starting batch match for all NPOs",
+        "[Matching] Starting batch match for all NPOs",
         extra={"trigger_source": trigger_source}
     )
     
@@ -513,7 +512,7 @@ def match_all_npos(
     # Get all NPOs
     npos = get_all_npos(db)
     if not npos:
-        logger.warning(f"[Matching] No NPOs found")
+        logger.warning("[Matching] No NPOs found")
         return {"success": False, "error": "No NPOs found", "processed": 0}
     
     results = {
@@ -576,7 +575,7 @@ def match_all_npos(
             })
     
     logger.info(
-        f"[Matching] Batch matching complete",
+        "[Matching] Batch matching complete",
         extra={
             "trigger_source": trigger_source,
             "processed": results["processed"],
