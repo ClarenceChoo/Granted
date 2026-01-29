@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './App.css'
 import MainLayout from './components/layout/MainLayout'
 import { SavedGrantsProvider } from './contexts/SavedGrantsContext'
@@ -190,9 +190,8 @@ export default function App() {
   }
 
   function AppRoutes() {
-    const location = useLocation()
     return (
-      <Routes location={location} key={location.pathname}>
+      <Routes>
         <Route path="/" element={
           <Home
             matchedGrants={displayedMatchedGrants}

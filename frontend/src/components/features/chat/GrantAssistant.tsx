@@ -223,12 +223,14 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
     return (
         <>
             {/* Overlay */}
-            <div
-                className={`fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 transition-opacity duration-300 ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
-            />
+            {isOpen && (
+                <div
+                    className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 transition-opacity duration-300 opacity-100 pointer-events-auto"
+                />
+            )}
 
             {/* Chat Panel */}
-            <div className={`fixed inset-y-0 right-0 z-50 w-full md:w-[480px] bg-white shadow-2xl transform transition-transform duration-500 cubic-bezier(0.16, 1, 0.3, 1) ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+            <div className={`fixed inset-y-0 right-0 z-50 w-full md:w-[480px] bg-white shadow-2xl transform transition-transform duration-500 cubic-bezier(0.16, 1, 0.3, 1) ${isOpen ? 'translate-x-0 pointer-events-auto' : 'translate-x-full pointer-events-none'}`}>
                 <div className="h-full flex flex-col">
                     {/* Header */}
                     <div className="p-6 border-b border-[#1E3A8A]/80 bg-[#1E3A8A] text-white flex justify-between items-start">
