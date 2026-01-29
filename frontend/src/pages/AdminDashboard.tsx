@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import type { Sector } from '../types'
 import { fetchGrants } from '../services/grantsService'
-import { authFetch, getStoredIdToken } from '../services/authService'
+import { authFetch, getStoredIdToken, logoutLocal } from '../services/authService'
 import { getMatchedGrants } from '../utils/matching'
 import type { Grant, Organization } from '../types'
 
@@ -20,7 +20,12 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
 
   const [sending, setSending] = useState(false)
   const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null)
+  const [deactivateReason, setDeactivateReason] = useState('User requested account deletion')
+  const [deactivating, setDeactivating] = useState(false)
+  const [confirmText, setConfirmText] = useState('')
+  const [deactivated, setDeactivated] = useState(false)
   const location = useLocation()
+  const navigate = useNavigate()
   const aiProfile = (location.state as any)?.aiProfile
   const [aiSuggestion, setAiSuggestion] = useState<any | null>(null)
 
@@ -216,6 +221,51 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
     }
   }
 
+  const handleDeactivateAccount = async () => {
+    const token = getStoredIdToken()
+    if (!token) {
+      setNotification({ type: 'error', message: 'Please sign in to deactivate your account.' })
+      return
+    }
+
+    if (confirmText.trim() !== 'DELETE') {
+      setNotification({ type: 'error', message: 'Please type DELETE to confirm deactivation.' })
+      return
+    }
+
+    setDeactivating(true)
+    try {
+      const res = await authFetch('https://deactivate-npo-kun7hshp7q-as.a.run.app', {
+        method: 'DELETE',
+        body: JSON.stringify({ reason: deactivateReason || 'User requested account deletion' }),
+      })
+
+      if (!res.ok) {
+        const txt = await res.text()
+        throw new Error(`${res.status} ${txt}`)
+      }
+
+      logoutLocal()
+      setDeactivated(true)
+      setTimeout(() => navigate('/signin'), 2500)
+    } catch (err: any) {
+      setNotification({ type: 'error', message: 'Deactivation failed: ' + (err?.message || String(err)) })
+    } finally {
+      setDeactivating(false)
+    }
+  }
+
+  if (deactivated) {
+    return (
+      <div className="max-w-2xl mx-auto p-6">
+        <div className="bg-white p-6 rounded-lg shadow-sm text-center">
+          <div className="text-xl font-semibold text-red-700 mb-2">Account Deactivated</div>
+          <div className="text-sm text-slate-600">You will be redirected to sign in shortly.</div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="flex items-center justify-between mb-6">
@@ -289,6 +339,38 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
             {notification.message}
           </div>
         )}
+      </div>
+
+      <div className="bg-white p-4 rounded-lg shadow-sm">
+        <div className="mb-2 font-medium text-red-700">Danger Zone</div>
+        <div className="text-sm text-slate-600 mb-3">Deactivate or delete your account. This action may be irreversible.</div>
+        <div className="grid md:grid-cols-2 gap-3 mb-4">
+          <div className="md:col-span-2">
+            <label className="text-xs font-semibold">Reason (optional)</label>
+            <input
+              value={deactivateReason}
+              onChange={e => setDeactivateReason(e.target.value)}
+              className="p-2 border rounded w-full"
+              placeholder="Reason for deactivation"
+            />
+          </div>
+          <div className="md:col-span-2">
+            <label className="text-xs font-semibold">Type DELETE to confirm</label>
+            <input
+              value={confirmText}
+              onChange={e => setConfirmText(e.target.value)}
+              className="p-2 border rounded w-full"
+              placeholder="DELETE"
+            />
+          </div>
+        </div>
+        <button
+          onClick={handleDeactivateAccount}
+          disabled={deactivating || confirmText.trim() !== 'DELETE'}
+          className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 disabled:opacity-60"
+        >
+          {deactivating ? 'Deactivating...' : 'Deactivate / Delete Account'}
+        </button>
       </div>
     </div>
   )
