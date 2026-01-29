@@ -47,3 +47,7 @@ from handlers.npo.deactivate_npo import deactivate_npo
 from handlers.saved_grants.save_grant import save_grant
 from handlers.saved_grants.unsave_grant import unsave_grant
 from handlers.saved_grants.get_saved_grants import get_saved_grants
+
+# Import AI handlers (Gemini-powered features)
+from handlers.ai.chat_refine import chat_refine
+from handlers.ai.chat import ai_chat
