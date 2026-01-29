@@ -47,6 +47,7 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
   const [aiSuggestion, setAiSuggestion] = useState<any | null>(null)
   const loadedEmailRef = useRef<string | null>(null)
   const hasLoadedRemoteProfileRef = useRef(false)
+  const hasAppliedAiProfileRef = useRef(false)
 
   const normalizeBeneficiaries = (value: any) => {
     if (Array.isArray(value)) return value.join(', ')
@@ -79,6 +80,7 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
   }, [])
 
   // Load current user's NPO profile from the backend (if authenticated)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     let isCancelled = false
     const loadProfile = async (emailKey: string) => {
@@ -120,22 +122,24 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
     loadedEmailRef.current = emailKey
     loadProfile(emailKey)
     return () => { isCancelled = true }
-  }, [setOrgProfile, user?.email])
+  }, [user?.email])
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (user?.email && !recipient) setRecipient(user.email)
-  }, [user?.email, recipient])
+  }, [user?.email])
 
   useEffect(() => {
-    if (aiProfile) {
+    if (aiProfile && !hasAppliedAiProfileRef.current) {
+      hasAppliedAiProfileRef.current = true
       console.log('Admin received aiProfile:', aiProfile)
       // Apply AI profile to fields so Admin looks populated
-      setOrgName(aiProfile.name || orgName)
-      setOrgSector(aiProfile.sector || orgSector)
-      setMission(aiProfile.mission || mission)
-      setBeneficiaries(normalizeBeneficiaries(aiProfile.beneficiaries || beneficiaries))
-      setAnnualBudget(aiProfile.annualBudget || annualBudget)
-      setAiSuggestion(aiProfile.suggestion || null)
+      if (aiProfile.name) setOrgName(aiProfile.name)
+      if (aiProfile.sector) setOrgSector(aiProfile.sector)
+      if (aiProfile.mission) setMission(aiProfile.mission)
+      if (aiProfile.beneficiaries) setBeneficiaries(normalizeBeneficiaries(aiProfile.beneficiaries))
+      if (aiProfile.annualBudget) setAnnualBudget(aiProfile.annualBudget)
+      if (aiProfile.suggestion) setAiSuggestion(aiProfile.suggestion)
     }
   }, [aiProfile])
 
