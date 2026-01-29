@@ -82,8 +82,6 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
   useEffect(() => {
     let isCancelled = false
     const loadProfile = async (emailKey: string) => {
-      const token = getStoredIdToken()
-      if (!token) return
       // no loading state UI
       try {
         const payload = await fetchProfileOnce(emailKey)
@@ -123,6 +121,10 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
     loadProfile(emailKey)
     return () => { isCancelled = true }
   }, [setOrgProfile, user?.email])
+
+  useEffect(() => {
+    if (user?.email && !recipient) setRecipient(user.email)
+  }, [user?.email, recipient])
 
   useEffect(() => {
     if (aiProfile) {
@@ -485,8 +487,10 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
         <div className="text-sm text-slate-600 mb-3">Deactivate or delete your account. This action may be irreversible.</div>
         <div className="grid md:grid-cols-2 gap-3 mb-4">
           <div className="md:col-span-2">
-            <label className="text-xs font-semibold">Reason (optional)</label>
+            <label htmlFor="admin-deactivate-reason" className="text-xs font-semibold">Reason (optional)</label>
             <input
+              id="admin-deactivate-reason"
+              name="deactivateReason"
               value={deactivateReason}
               onChange={e => setDeactivateReason(e.target.value)}
               className="p-2 border rounded w-full"
@@ -494,8 +498,10 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
             />
           </div>
           <div className="md:col-span-2">
-            <label className="text-xs font-semibold">Type DELETE to confirm</label>
+            <label htmlFor="admin-confirm-delete" className="text-xs font-semibold">Type DELETE to confirm</label>
             <input
+              id="admin-confirm-delete"
+              name="confirmDelete"
               value={confirmText}
               onChange={e => setConfirmText(e.target.value)}
               className="p-2 border rounded w-full"
