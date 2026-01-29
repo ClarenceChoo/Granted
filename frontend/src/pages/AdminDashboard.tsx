@@ -25,8 +25,7 @@ async function fetchProfileOnce(emailKey: string) {
 
 export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { setOrgProfile?: (p: Organization) => void, orgProfile?: Organization, user?: { name?: string; email?: string } | null }) {
   const [grants, setGrants] = useState<Grant[]>([])
-  // fixed demo recipient per request
-  const [recipient] = useState('clarence7890gt@gmail.com')
+  const [recipient, setRecipient] = useState('')
 
   // NPO question fields — initialize empty, then populate from props or local storage
   const [orgName, setOrgName] = useState('')
@@ -55,18 +54,20 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
     return value ? String(value) : ''
   }
 
-  const applyProfileToState = (profile: Partial<Organization> & { beneficiaries?: any; annualBudget?: any; budget?: any; description?: any; mission?: any }) => {
+  const applyProfileToState = (profile: Partial<Organization> & { beneficiaries?: any; annualBudget?: any; budget?: any; description?: any; mission?: any; email?: any }) => {
     const nextName = profile.name || ''
     const nextSector = (profile.sector as Organization['sector']) || 'Social Service'
     const nextMission = profile.description || profile.mission || ''
     const nextBeneficiaries = normalizeBeneficiaries(profile.beneficiaries || '')
     const nextBudget = (profile.annualBudget || profile.budget) ? String(profile.annualBudget || profile.budget) : ''
+    const nextEmail = (profile as any).email || ''
 
     if (nextName !== orgName) setOrgName(nextName)
     if (nextSector !== orgSector) setOrgSector(nextSector)
     if (nextMission !== mission) setMission(nextMission)
     if (nextBeneficiaries !== beneficiaries) setBeneficiaries(nextBeneficiaries)
     if (nextBudget !== annualBudget) setAnnualBudget(nextBudget)
+    if (nextEmail && nextEmail !== recipient) setRecipient(nextEmail)
   }
 
   useEffect(() => {
@@ -433,7 +434,7 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
 
         <div className="grid md:grid-cols-2 gap-3 mb-4">
           <div>
-            <label className="text-xs font-semibold">Recipient (fixed)</label>
+            <label className="text-xs font-semibold">Recipient</label>
             <input value={recipient} readOnly className="p-2 border rounded w-full bg-slate-50" />
           </div>
           <div>
