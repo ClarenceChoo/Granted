@@ -110,14 +110,14 @@ def _sync_grants_logic() -> dict:
     return summary
 
 
-@scheduler_fn.on_schedule(schedule="0 6 * * *", timezone=ZoneInfo("Asia/Singapore"))
+@scheduler_fn.on_schedule(schedule="0 */3 * * *", timezone=ZoneInfo("Asia/Singapore"))
 def sync_grants_daily(event: scheduler_fn.ScheduledEvent) -> None:
     """
-    Scheduled function that runs daily at 6am SGT to sync grant data.
+    Scheduled function that runs every 3 hours to sync grant data.
     Fetches grants from OurSGGrants API and updates Firestore.
     Only writes new or modified grants to minimize writes.
     """
-    logger.info("Starting daily grants sync job")
+    logger.info("Starting scheduled grants sync job")
     
     try:
         _sync_grants_logic()
