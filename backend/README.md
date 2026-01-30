@@ -23,19 +23,19 @@ AI-powered grant matching platform for non-profit organisations (NPOs) in Singap
 │  │ • Login      │  │ • Get Saved  │  │ • Firestore  │ │
 │  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘ │
 │         │                  │                  │         │
-│  ┌──────────────┐  ┌──────────────┐                   │
-│  │  Get Matches │  │ Email Notify │                   │
-│  │              │  │              │                   │
-│  │ • Auth       │  │ • Weekly     │                   │
-│  │ • Get NPO    │  │ • Manual     │                   │
-│  │   Matches    │  │ • Jinja2     │                   │
-│  └──────┬───────┘  └──────┬───────┘                   │
-│         │                  │                           │
-└─────────┼──────────────────┼───────────────────────────┘
-          │                  │
-          ▼                  ▼
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐ │
+│  │  Get Matches │  │ Email Notify │  │   AI Chat    │ │
+│  │              │  │              │  │   Features   │ │
+│  │ • Auth       │  │ • Weekly     │  │              │ │
+│  │ • Get NPO    │  │ • Manual     │  │ • Chat       │ │
+│  │   Matches    │  │ • Jinja2     │  │ • Refine     │ │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘ │
+│         │                  │                  │         │
+└─────────┼──────────────────┼──────────────────┼─────────┘
+          │                  │                  │
+          ▼                  ▼                  ▼
 ┌─────────────────────────────────────────────────────────┐
-│              Firebase Services                          │
+│              Firebase Services & External APIs          │
 │                                                         │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐ │
 │  │  Firestore   │  │  Firebase    │  │   Secret     │ │
@@ -51,8 +51,11 @@ AI-powered grant matching platform for non-profit organisations (NPOs) in Singap
                           ▼
                   ┌──────────────┐
                   │   OpenAI     │
-                  │   GPT-4o     │
+                  │  GPT-4o-mini │
                   │              │
+                  │ • Matching   │
+                  │ • Chat       │
+                  │ • Refine     │
                   │ Structured   │
                   │   Outputs    │
                   └──────────────┘
@@ -64,8 +67,10 @@ AI-powered grant matching platform for non-profit organisations (NPOs) in Singap
 - **Database**: Cloud Firestore (NoSQL)
 - **Authentication**: Firebase Auth (Email/Password)
 - **AI/ML**: 
-  - OpenAI GPT-4o-2024-08-06 (Structured Outputs for matching)
-  - Google Generative AI Gemini (Chat & refinement)
+  - OpenAI GPT-4o-mini (Structured Outputs)
+    - Grant matching and relevance scoring
+    - AI chat for grant advisory
+    - Mission statement refinement
 - **Email**: Firestore Send Email Extension
 - **Templates**: Jinja2 3.1.6 (HTML email rendering)
 - **Secrets**: Google Cloud Secret Manager
@@ -123,17 +128,21 @@ AI-powered grant matching platform for non-profit organisations (NPOs) in Singap
 - Returns match data with grant_id, similarity_score, and reasoning
 
 ### 6. AI Chat Features (`/handlers/ai`)
-**Powered by Google Gemini**
+**Powered by OpenAI GPT-4o-mini with Structured Outputs**
 
 - **ai_chat**: Free-form conversational AI for grant-related questions
   - Supports chat history and context
   - NPO-specific recommendations
   - Grant discovery and advice
+  - Structured JSON response format
+  - Temperature: 0.7, Max tokens: 800
 
 - **chat_refine**: AI-powered mission statement refinement
   - Refines NPO mission/description
   - Generates grant opportunity strategy
   - Returns structured JSON with refined content
+  - Pydantic model validation for response format
+  - Temperature: 0.7, Max tokens: 500
 
 ## Data Models
 
@@ -217,8 +226,7 @@ mail/{id}
 
 Managed via Firebase Secret Manager:
 - `WEB_API_KEY`: Firebase Web API key for authentication
-- `OPENAI_API_KEY`: OpenAI API key for grant matching
-- `GEMINI_API_KEY`: Google Generative AI API key for chat features
+- `OPENAI_API_KEY`: OpenAI API key for grant matching, chat, and refinement
 
 ## Deployment
 
@@ -234,8 +242,9 @@ firebase deploy --only functions:match_grants_manual
 
 ✅ **Email/Password Authentication** with JWT tokens  
 ✅ **AI-Powered Grant Matching** using OpenAI structured outputs  
-✅ **Conversational AI Chat** with Google Gemini for grant advice  
+✅ **Conversational AI Chat** with OpenAI GPT-4o-mini for grant advice  
 ✅ **AI Mission Refinement** to optimize NPO profiles  
+✅ **Structured AI Outputs** with Pydantic validation for reliability  
 ✅ **Advanced Grant Search** with filters, sorting, and pagination  
 ✅ **Automated Matching** via CRON jobs and Firestore triggers  
 ✅ **Personalized Email Notifications** with responsive HTML templates  
@@ -248,8 +257,9 @@ firebase deploy --only functions:match_grants_manual
 ## Architecture Highlights
 
 - **Serverless**: Scales automatically with Firebase Functions
-- **AI-First**: OpenAI GPT-4o evaluates ALL grants for relevance
+- **AI-First**: OpenAI GPT-4o-mini evaluates ALL grants for relevance and powers chat features
 - **Event-Driven**: Firestore triggers auto-update matches on data changes
 - **Stateless**: Each function call is independent
 - **Secure**: Secrets in Secret Manager, no hardcoded credentials
 - **Observable**: Structured logging with contextual metadata
+- **Reliable**: Pydantic-validated structured outputs ensure consistent AI responses
