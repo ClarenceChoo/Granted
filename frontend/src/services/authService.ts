@@ -30,6 +30,19 @@ export function getStoredIdToken() {
   return localStorage.getItem('idToken') || localStorage.getItem('granted_token')
 }
 
+const AUTH_DEBUG =
+  !import.meta.env.DEV &&
+  typeof window !== 'undefined' &&
+  typeof window.localStorage !== 'undefined' &&
+  window.localStorage.getItem('debug_auth') === '1'
+
+const authNow = () => (typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now())
+
+function debugAuth(data: Record<string, any>) {
+  if (!AUTH_DEBUG) return
+  console.debug('[authFetch]', data)
+}
+
 /**
  * Fetch wrapper that attaches `idToken` from localStorage.
  * Removed Firebase SDK dependency — backend must return/manage tokens.
@@ -40,7 +53,18 @@ export async function authFetch(input: RequestInfo, init: RequestInit = {}) {
   if (idToken) headers.set('Authorization', `Bearer ${idToken}`)
   if (!headers.has('Content-Type')) headers.set('Content-Type', 'application/json')
 
+  const startedAt = AUTH_DEBUG ? authNow() : 0
   const res = await fetch(input, { ...init, headers })
+  if (AUTH_DEBUG) {
+    const url = typeof input === 'string' ? input : (input instanceof Request ? input.url : 'request')
+    const method = init.method || (input instanceof Request ? input.method : 'GET')
+    debugAuth({
+      url,
+      method,
+      status: res.status,
+      redirected: res.redirected,
+      ms: Math.round(authNow() - startedAt),
+    })
+  }
   return res
 }
-
