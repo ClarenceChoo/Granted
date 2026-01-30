@@ -7,7 +7,7 @@ import type { Grant } from '../types'
 import { fetchGrants } from '../services/grantsService'
 import { useSavedGrants } from '../contexts/SavedGrantsContext'
 
-export default function Discover() {
+export default function Discover({ isAuthenticated = false }: { isAuthenticated?: boolean }) {
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedAgency, setSelectedAgency] = useState<string | null>(null)
     const [grants, setGrants] = useState<Grant[]>(GRANTS_DATA)
@@ -52,6 +52,8 @@ export default function Discover() {
     })
 
     const allAgencies = Array.from(new Set(grants.map(g => g.agency))).sort()
+
+    const canSave = !!isAuthenticated
 
     return (
         <div className="bg-slate-50 min-h-screen py-12">
@@ -178,7 +180,12 @@ export default function Discover() {
                     <>
                         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {filteredGrants.map(grant => (
-                                <GrantCard key={grant.id} grant={grant} isSaved={savedIds.includes(grant.id)} onToggleSave={toggleSave} />
+                                <GrantCard
+                                    key={grant.id}
+                                    grant={grant}
+                                    isSaved={canSave ? savedIds.includes(grant.id) : false}
+                                    onToggleSave={canSave ? toggleSave : undefined}
+                                />
                             ))}
                         </div>
 

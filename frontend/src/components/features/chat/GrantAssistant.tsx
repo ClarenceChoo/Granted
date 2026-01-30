@@ -77,7 +77,7 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
     const fetchAiRefinement = async (mission: string, sector: string = 'Social Service') => {
         setIsRefining(true)
         try {
-            const response = await fetch('http://localhost:8000/api/chat-refine', {
+            const response = await fetch('https://chat-refine-kun7hshp7q-as.a.run.app', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ mission, sector }),
@@ -112,7 +112,7 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
         setIsChatLoading(true)
 
         try {
-            const response = await fetch('http://localhost:8000/api/chat', {
+            const response = await fetch('https://ai-chat-kun7hshp7q-as.a.run.app', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -223,12 +223,14 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
     return (
         <>
             {/* Overlay */}
-            <div
-                className={`fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 transition-opacity duration-300 ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
-            />
+            {isOpen && (
+                <div
+                    className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 transition-opacity duration-300 opacity-100 pointer-events-auto"
+                />
+            )}
 
             {/* Chat Panel */}
-            <div className={`fixed inset-y-0 right-0 z-50 w-full md:w-[480px] bg-white shadow-2xl transform transition-transform duration-500 cubic-bezier(0.16, 1, 0.3, 1) ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+            <div className={`fixed inset-y-0 right-0 z-50 w-full md:w-[480px] bg-white shadow-2xl transform transition-transform duration-500 cubic-bezier(0.16, 1, 0.3, 1) ${isOpen ? 'translate-x-0 pointer-events-auto' : 'translate-x-full pointer-events-none'}`}>
                 <div className="h-full flex flex-col">
                     {/* Header */}
                     <div className="p-6 border-b border-[#1E3A8A]/80 bg-[#1E3A8A] text-white flex justify-between items-start">
@@ -504,8 +506,8 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
                                         )}
                                         <div className="space-y-2 max-w-[85%]">
                                             <div className={`p-4 rounded-2xl shadow-sm leading-relaxed whitespace-pre-wrap ${msg.role === 'user'
-                                                    ? 'bg-[#0F766E] text-white rounded-tr-none'
-                                                    : 'bg-white border border-slate-100 text-slate-700 rounded-tl-none'
+                                                ? 'bg-[#0F766E] text-white rounded-tr-none'
+                                                : 'bg-white border border-slate-100 text-slate-700 rounded-tl-none'
                                                 }`}>
                                                 <p>{msg.content}</p>
                                             </div>

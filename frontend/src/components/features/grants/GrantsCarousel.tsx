@@ -34,7 +34,7 @@ export default function GrantsCarousel() {
             <div className="marquee-track">
                 {display.map((src, idx) => (
                     <div className="marquee-item" key={idx}>
-                        <img src={src} alt={`organisation-logo-${idx}`} className="h-10 w-auto opacity-90 hover:opacity-100 transition-all" />
+                        <img src={src} alt={`organisation-logo-${idx}`} className="h-20 w-auto opacity-90 hover:opacity-100 transition-all" />
                     </div>
                 ))}
             </div>

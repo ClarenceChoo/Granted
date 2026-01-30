@@ -18,6 +18,7 @@ export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: an
 
     const [mode, setMode] = useState<'login' | 'register'>(initialMode)
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [notice, setNotice] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null)
 
     // Initialize empty if we are going to stream, otherwise standard defaults
     const [formData, setFormData] = useState({
@@ -30,6 +31,12 @@ export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: an
     })
 
     const [showAiOverlay, setShowAiOverlay] = useState(false)
+
+    const storeProfileLocally = (profile: { email?: string; name?: string }) => {
+        if (!profile?.email) return
+        localStorage.setItem('granted_user_email', profile.email)
+        localStorage.setItem('granted_user_profile', JSON.stringify(profile))
+    }
 
     // AI Auto-fill Simulation sequence
     useEffect(() => {
@@ -61,6 +68,10 @@ export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: an
         }
     }, [prefillData])
 
+    useEffect(() => {
+        setNotice(null)
+    }, [mode])
+
     const streamText = async (field: keyof typeof formData, text: string) => {
         for (let i = 0; i <= text.length; i++) {
             setFormData(prev => ({ ...prev, [field]: text.slice(0, i) }))
@@ -87,6 +98,7 @@ export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: an
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         if (isSubmitting) return
+        setNotice(null)
         setIsSubmitting(true)
 
         try {
@@ -112,7 +124,7 @@ export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: an
 
                 if (!res.ok) {
                     const txt = await res.text()
-                    alert(`Registration failed: ${res.status} ${txt}`)
+                    setNotice({ type: 'error', message: `Registration failed: ${res.status} ${txt}` })
                     return
                 }
 
@@ -127,15 +139,18 @@ export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: an
                 // After creating the NPO on your backend, call the login endpoint to obtain idToken/refreshToken
                 try {
                     await loginNPO(formData.email, formData.password)
-                    onAuthSuccess?.(users[formData.email].profile)
-                    alert('Successfully Registered and Logged In!')
+                    const profile = users[formData.email].profile
+                    storeProfileLocally(profile)
+                    onAuthSuccess?.(profile)
                     navigate('/')
                 } catch (loginErr: any) {
                     // registration succeeded but login failed — still inform user
                     console.warn('Registered but login failed', loginErr)
-                    onAuthSuccess?.(users[formData.email].profile)
-                    alert('Registered successfully. Please sign in.')
-                    navigate('/signin')
+                    const profile = users[formData.email].profile
+                    storeProfileLocally(profile)
+                    onAuthSuccess?.(profile)
+                    setMode('login')
+                    setNotice({ type: 'info', message: 'Registered successfully. Please sign in.' })
                 }
 
                 return
@@ -144,14 +159,16 @@ export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: an
             // Login mode: call backend login endpoint to get idToken etc.
             await loginNPO(formData.email, formData.password)
             // backend returned tokens stored by loginNPO; no Firebase exchange required
-
-            const profile = { email: formData.email, name: formData.name || formData.email }
+            const usersRaw = localStorage.getItem('granted_users')
+            const users = usersRaw ? JSON.parse(usersRaw) : {}
+            const storedProfile = users[formData.email]?.profile
+            const profile = storedProfile || { email: formData.email, name: formData.name || formData.email }
+            storeProfileLocally(profile)
             onAuthSuccess?.(profile)
-            alert('Successfully Logged In!')
             navigate('/')
             return
         } catch (err: any) {
-            alert('Login failed: ' + (err?.message || String(err)))
+            setNotice({ type: 'error', message: 'Login failed: ' + (err?.message || String(err)) })
             return
         } finally {
             setIsSubmitting(false)
@@ -263,6 +280,12 @@ export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: an
                                 <span className="font-bold text-indigo-900">AI Auto-Fill Complete</span>
                                 <p className="text-indigo-800/80 mt-1 text-xs leading-relaxed">We've extracted your details and mission statement from the chat to jumpstart your profile.</p>
                             </div>
+                        </div>
+                    )}
+
+                    {notice && (
+                        <div className={`mb-6 rounded-xl px-4 py-3 text-sm border ${notice.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : notice.type === 'error' ? 'bg-rose-50 border-rose-200 text-rose-900' : 'bg-sky-50 border-sky-200 text-sky-900'}`}>
+                            {notice.message}
                         </div>
                     )}
 
