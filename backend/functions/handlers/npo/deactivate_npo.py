@@ -24,7 +24,7 @@ def deactivate_npo(req: https_fn.Request) -> https_fn.Response:
     This will:
     1. Delete the NPO document from Firestore
     2. Delete the matches document for this NPO
-    3. Disable the Firebase Auth account
+    3. Delete the Firebase Auth account
     
     Expected JSON body (optional):
     {
@@ -108,13 +108,12 @@ def deactivate_npo(req: https_fn.Request) -> https_fn.Response:
         npo_ref.delete()
         logger.info(f"Deleted NPO document {uid}")
         
-        # 4. Disable the Firebase Auth user
-        # Note: This prevents login but keeps the user record for audit purposes
+        # 4. Delete the Firebase Auth user
         try:
-            auth.update_user(uid, disabled=True)
-            logger.info(f"Disabled Firebase Auth user {uid}")
+            auth.delete_user(uid)
+            logger.info(f"Deleted Firebase Auth user {uid}")
         except Exception as e:
-            logger.error(f"Failed to disable Firebase Auth user: {e}")
+            logger.error(f"Failed to delete Firebase Auth user: {e}")
             # Continue anyway - Firestore deletions are more important
         
         return https_fn.Response(
