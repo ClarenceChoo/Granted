@@ -1,6 +1,6 @@
 """
 Send personalized grant match emails to NPOs.
-Supports CRON (weekly Monday 6am SGT) and HTTP manual triggers.
+Supports CRON (weekly Monday 9am SGT) and HTTP manual triggers.
 """
 
 import json
