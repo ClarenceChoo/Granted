@@ -47,7 +47,26 @@ const stripMarkdown = (text: string): string => {
 
 export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, currentProfile }: GrantAssistantProps) {
     const navigate = useNavigate()
-    const [onboardingStep, setOnboardingStep] = useState<Step>('name')
+
+    // Check if user is logged in (has valid profile data)
+    const isLoggedIn = () => {
+        // Check if profile has essential fields filled in
+        const hasProfileData = currentProfile.name && currentProfile.name !== 'My Organization' && currentProfile.uen
+        // Also check localStorage for logged-in user
+        const storedProfile = localStorage.getItem('granted_user_profile')
+        if (storedProfile) {
+            try {
+                const parsed = JSON.parse(storedProfile)
+                return !!(parsed.email || parsed.name)
+            } catch {
+                return false
+            }
+        }
+        return !!hasProfileData
+    }
+
+    // Start at 'chat' step if logged in, otherwise 'name' for onboarding
+    const [onboardingStep, setOnboardingStep] = useState<Step>(isLoggedIn() ? 'chat' : 'name')
 
     const steps = ['name', 'uen', 'sector', 'mission', 'ai_mission', 'beneficiaries', 'budget', 'complete']
     const isStepActiveOrPast = (targetStep: Step) => {
@@ -69,8 +88,17 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
     const [isRefining, setIsRefining] = useState(false)
     const [aiSuggestion, setAiSuggestion] = useState<any>(null)
 
-    // Free-form chat state
-    const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
+    // Free-form chat state - add welcome message for logged-in users
+    const getInitialChatMessages = (): ChatMessage[] => {
+        if (isLoggedIn()) {
+            return [{
+                role: 'assistant',
+                content: `Hi ${currentProfile.name || 'there'}! 👋 I'm your Grant Assistant. How can I help you today? You can ask me about:\n\n• Finding suitable grants for your organization\n• Grant application tips and best practices\n• Eligibility requirements for specific grants\n• Funding strategies for NPOs in Singapore`
+            }]
+        }
+        return []
+    }
+    const [chatMessages, setChatMessages] = useState<ChatMessage[]>(getInitialChatMessages())
     const [chatInput, setChatInput] = useState('')
     const [isChatLoading, setIsChatLoading] = useState(false)
 
