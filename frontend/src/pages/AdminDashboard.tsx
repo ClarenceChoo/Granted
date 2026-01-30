@@ -1,3 +1,4 @@
+// AdminDashboard.tsx
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import type { Sector } from '../types'
@@ -23,7 +24,15 @@ async function fetchProfileOnce(emailKey: string) {
   })
 }
 
-export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { setOrgProfile?: (p: Organization) => void, orgProfile?: Organization, user?: { name?: string; email?: string } | null }) {
+export default function AdminDashboard({
+  setOrgProfile,
+  orgProfile,
+  user,
+}: {
+  setOrgProfile?: (p: Organization) => void
+  orgProfile?: Organization
+  user?: { name?: string; email?: string } | null
+}) {
   const [grants, setGrants] = useState<Grant[]>([])
   const [recipient, setRecipient] = useState('')
 
@@ -41,12 +50,24 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
   const [updatingProfile, setUpdatingProfile] = useState(false)
   const [confirmText, setConfirmText] = useState('')
   const [deactivated, setDeactivated] = useState(false)
+
   const location = useLocation()
   const navigate = useNavigate()
   const aiProfile = (location.state as any)?.aiProfile
   const [aiSuggestion, setAiSuggestion] = useState<any | null>(null)
+
   const loadedEmailRef = useRef<string | null>(null)
   const hasLoadedRemoteProfileRef = useRef(false)
+
+  // ✅ NEW: prevents “fighting” the user while they click/type
+  const isDirtyRef = useRef(false)
+
+  // ✅ NEW: ensure local hydration runs at most once (before remote wins)
+  const hasHydratedLocalRef = useRef(false)
+
+  const markDirty = () => {
+    isDirtyRef.current = true
+  }
 
   const normalizeBeneficiaries = (value: any) => {
     if (Array.isArray(value)) return value.join(', ')
@@ -54,7 +75,13 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
     return value ? String(value) : ''
   }
 
-  const applyProfileToState = (profile: Partial<Organization> & { beneficiaries?: any; annualBudget?: any; budget?: any; description?: any; mission?: any; email?: any }) => {
+  // ✅ updated: won’t overwrite fields once user has started editing (unless forced)
+  const applyProfileToState = (
+    profile: Partial<Organization> & { beneficiaries?: any; annualBudget?: any; budget?: any; description?: any; mission?: any; email?: any },
+    opts?: { force?: boolean }
+  ) => {
+    if (!opts?.force && isDirtyRef.current) return
+
     const nextName = profile.name || ''
     const nextSector = (profile.sector as Organization['sector']) || 'Social Service'
     const nextMission = profile.description || profile.mission || ''
@@ -82,7 +109,6 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
   useEffect(() => {
     let isCancelled = false
     const loadProfile = async (emailKey: string) => {
-      // no loading state UI
       try {
         const payload = await fetchProfileOnce(emailKey)
         if (isCancelled) return
@@ -90,7 +116,9 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
         const profile = (payload && payload.data) ? payload.data : payload
         if (!profile) return
 
+        // ✅ Will not clobber user typing
         applyProfileToState(profile)
+
         hasLoadedRemoteProfileRef.current = true
 
         const updatedProfile = {
@@ -111,13 +139,13 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
         if (!isCancelled) {
           setNotification({ type: 'error', message: 'Failed to load profile: ' + (err?.message || String(err)) })
         }
-      } finally {
-        // no loading state UI
       }
     }
+
     const emailKey = user?.email || localStorage.getItem('granted_user_email') || 'anonymous'
     if (loadedEmailRef.current === emailKey) return
     loadedEmailRef.current = emailKey
+
     loadProfile(emailKey)
     return () => { isCancelled = true }
   }, [setOrgProfile, user?.email])
@@ -126,23 +154,33 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
     if (user?.email && !recipient) setRecipient(user.email)
   }, [user?.email, recipient])
 
+  // Apply AI profile (from navigation) — use functional updates to avoid stale closures
   useEffect(() => {
     if (aiProfile) {
       console.log('Admin received aiProfile:', aiProfile)
-      // Apply AI profile to fields so Admin looks populated
-      setOrgName(aiProfile.name || orgName)
-      setOrgSector(aiProfile.sector || orgSector)
-      setMission(aiProfile.mission || mission)
-      setBeneficiaries(normalizeBeneficiaries(aiProfile.beneficiaries || beneficiaries))
-      setAnnualBudget(aiProfile.annualBudget || annualBudget)
+
+      // ✅ Don’t fight user if they already started editing
+      if (!isDirtyRef.current) {
+        setOrgName(prev => aiProfile.name ?? prev)
+        setOrgSector(prev => (aiProfile.sector as Organization['sector']) ?? prev)
+        setMission(prev => aiProfile.mission ?? prev)
+        setBeneficiaries(prev => normalizeBeneficiaries(aiProfile.beneficiaries ?? prev))
+        setAnnualBudget(prev => aiProfile.annualBudget ?? prev)
+      }
+
       setAiSuggestion(aiProfile.suggestion || null)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aiProfile])
 
   // Populate fields from provided orgProfile prop or from locally stored user profile
+  // ✅ updated: hydrate at most once (and never after remote has loaded)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (hasLoadedRemoteProfileRef.current) return
+    if (hasHydratedLocalRef.current) return
+    hasHydratedLocalRef.current = true
+
     const storedOrgRaw = localStorage.getItem('granted_org_profile')
     if (storedOrgRaw) {
       try {
@@ -159,7 +197,7 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
     // prefer explicit orgProfile prop
     if (orgProfile) {
       applyProfileToState(orgProfile)
-      // beneficiaries & budget may not be part of Organization type; try to read from localStorage/user
+
       const usersRaw = localStorage.getItem('granted_users')
       if (usersRaw && user?.email) {
         try {
@@ -406,7 +444,9 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold">Admin Dashboard</h1>
         </div>
-        <Link to="/" className="text-sm text-slate-500 hover:underline">Back to app</Link>
+        <Link to="/" className="text-sm text-slate-500 hover:underline">
+          Back to app
+        </Link>
       </div>
 
       <div className="mb-6 bg-white p-4 rounded-lg shadow-sm">
@@ -418,18 +458,33 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
               <div>
                 <div className="text-sm font-semibold">{aiSuggestion.headline}</div>
                 <div className="text-sm text-slate-600 mt-2">{aiSuggestion.blurb}</div>
-                <div className="mt-3 text-xs text-slate-500">Suggested beneficiaries: <strong>{aiSuggestion.suggestedBeneficiaries}</strong> • Suggested budget: <strong>{aiSuggestion.suggestedBudget}</strong></div>
+                <div className="mt-3 text-xs text-slate-500">
+                  Suggested beneficiaries: <strong>{aiSuggestion.suggestedBeneficiaries}</strong> • Suggested budget:{' '}
+                  <strong>{aiSuggestion.suggestedBudget}</strong>
+                </div>
               </div>
               <div>
-                <button onClick={() => {
-                  // reapply suggestion to fields
-                  setOrgName(prev => prev)
-                  setOrgSector(aiProfile?.sector || orgSector)
-                  setMission(aiProfile?.mission || mission)
-                  setBeneficiaries(aiProfile?.beneficiaries || beneficiaries)
-                  setAnnualBudget(aiProfile?.annualBudget || annualBudget)
-                  alert('AI suggestion applied to the Admin fields.')
-                }} className="px-3 py-1 bg-indigo-600 text-white rounded text-sm">Apply</button>
+                <button
+                  onClick={() => {
+                    // reapply suggestion to fields
+                    // ✅ FIX: org name no-op -> actually apply
+                    // ✅ force apply (this is an explicit user action)
+                    applyProfileToState(
+                      {
+                        name: aiProfile?.name,
+                        sector: aiProfile?.sector,
+                        mission: aiProfile?.mission,
+                        beneficiaries: aiProfile?.beneficiaries,
+                        annualBudget: aiProfile?.annualBudget,
+                      },
+                      { force: true }
+                    )
+                    alert('AI suggestion applied to the Admin fields.')
+                  }}
+                  className="px-3 py-1 bg-indigo-600 text-white rounded text-sm"
+                >
+                  Apply
+                </button>
               </div>
             </div>
           </div>
@@ -437,28 +492,90 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
 
         <div className="grid md:grid-cols-2 gap-3 mb-4">
           <div>
-            <label htmlFor="admin-recipient" className="text-xs font-semibold">Recipient</label>
+            <label htmlFor="admin-recipient" className="text-xs font-semibold">
+              Recipient
+            </label>
             <input id="admin-recipient" name="adminRecipient" value={recipient} readOnly className="p-2 border rounded w-full bg-slate-50" />
           </div>
+
           <div>
-            <label htmlFor="admin-org-name" className="text-xs font-semibold">Organization Name</label>
-            <input id="admin-org-name" name="orgName" value={orgName} onChange={e => setOrgName(e.target.value)} className="p-2 border rounded w-full" />
+            <label htmlFor="admin-org-name" className="text-xs font-semibold">
+              Organization Name
+            </label>
+            <input
+              id="admin-org-name"
+              name="orgName"
+              value={orgName}
+              onChange={e => {
+                markDirty()
+                setOrgName(e.target.value)
+              }}
+              className="p-2 border rounded w-full"
+            />
           </div>
+
           <div>
-            <label htmlFor="admin-sector" className="text-xs font-semibold">Sector</label>
-            <input id="admin-sector" name="sector" value={orgSector} onChange={e => setOrgSector(e.target.value as Sector)} className="p-2 border rounded w-full" />
+            <label htmlFor="admin-sector" className="text-xs font-semibold">
+              Sector
+            </label>
+            <input
+              id="admin-sector"
+              name="sector"
+              value={orgSector}
+              onChange={e => {
+                markDirty()
+                setOrgSector(e.target.value as Sector)
+              }}
+              className="p-2 border rounded w-full"
+            />
           </div>
+
           <div>
-            <label htmlFor="admin-annual-budget" className="text-xs font-semibold">Annual Budget</label>
-            <input id="admin-annual-budget" name="annualBudget" value={annualBudget} onChange={e => setAnnualBudget(e.target.value)} className="p-2 border rounded w-full" />
+            <label htmlFor="admin-annual-budget" className="text-xs font-semibold">
+              Annual Budget
+            </label>
+            <input
+              id="admin-annual-budget"
+              name="annualBudget"
+              value={annualBudget}
+              onChange={e => {
+                markDirty()
+                setAnnualBudget(e.target.value)
+              }}
+              className="p-2 border rounded w-full"
+            />
           </div>
+
           <div className="md:col-span-2">
-            <label htmlFor="admin-mission" className="text-xs font-semibold">Mission / What you do</label>
-            <textarea id="admin-mission" name="mission" value={mission} onChange={e => setMission(e.target.value)} className="p-2 border rounded w-full h-24" />
+            <label htmlFor="admin-mission" className="text-xs font-semibold">
+              Mission / What you do
+            </label>
+            <textarea
+              id="admin-mission"
+              name="mission"
+              value={mission}
+              onChange={e => {
+                markDirty()
+                setMission(e.target.value)
+              }}
+              className="p-2 border rounded w-full h-24"
+            />
           </div>
+
           <div className="md:col-span-2">
-            <label htmlFor="admin-beneficiaries" className="text-xs font-semibold">Primary Beneficiaries</label>
-            <input id="admin-beneficiaries" name="beneficiaries" value={beneficiaries} onChange={e => setBeneficiaries(e.target.value)} className="p-2 border rounded w-full" />
+            <label htmlFor="admin-beneficiaries" className="text-xs font-semibold">
+              Primary Beneficiaries
+            </label>
+            <input
+              id="admin-beneficiaries"
+              name="beneficiaries"
+              value={beneficiaries}
+              onChange={e => {
+                markDirty()
+                setBeneficiaries(e.target.value)
+              }}
+              className="p-2 border rounded w-full"
+            />
           </div>
         </div>
 
@@ -467,17 +584,24 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
         </div>
 
         <div className="flex gap-3">
-          <button onClick={handleSend} disabled={sending} className="bg-[#0F766E] text-white px-4 py-2 rounded hover:bg-[#0d6963]">{sending ? 'Sending...' : 'Send Best Matching Grants'}</button>
-          <button
-            onClick={handleUpdateProfile}
-            disabled={updatingProfile}
-            className="px-3 py-2 border rounded disabled:opacity-60"
-          >
+          <button onClick={handleSend} disabled={sending} className="bg-[#0F766E] text-white px-4 py-2 rounded hover:bg-[#0d6963]">
+            {sending ? 'Sending...' : 'Send Best Matching Grants'}
+          </button>
+          <button onClick={handleUpdateProfile} disabled={updatingProfile} className="px-3 py-2 border rounded disabled:opacity-60">
             {updatingProfile ? 'Updating...' : 'Update Profile'}
           </button>
         </div>
+
         {notification && (
-          <div className={`mt-4 p-3 rounded text-sm ${notification.type === 'success' ? 'bg-green-50 border border-green-200 text-green-800' : notification.type === 'error' ? 'bg-red-50 border border-red-200 text-red-800' : 'bg-blue-50 border border-blue-200 text-blue-800'}`}>
+          <div
+            className={`mt-4 p-3 rounded text-sm ${
+              notification.type === 'success'
+                ? 'bg-green-50 border border-green-200 text-green-800'
+                : notification.type === 'error'
+                ? 'bg-red-50 border border-red-200 text-red-800'
+                : 'bg-blue-50 border border-blue-200 text-blue-800'
+            }`}
+          >
             {notification.message}
           </div>
         )}
@@ -488,7 +612,9 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
         <div className="text-sm text-slate-600 mb-3">Deactivate or delete your account. This action may be irreversible.</div>
         <div className="grid md:grid-cols-2 gap-3 mb-4">
           <div className="md:col-span-2">
-            <label htmlFor="admin-deactivate-reason" className="text-xs font-semibold">Reason (optional)</label>
+            <label htmlFor="admin-deactivate-reason" className="text-xs font-semibold">
+              Reason (optional)
+            </label>
             <input
               id="admin-deactivate-reason"
               name="deactivateReason"
@@ -498,8 +624,11 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
               placeholder="Reason for deactivation"
             />
           </div>
+
           <div className="md:col-span-2">
-            <label htmlFor="admin-confirm-delete" className="text-xs font-semibold">Type DELETE to confirm</label>
+            <label htmlFor="admin-confirm-delete" className="text-xs font-semibold">
+              Type DELETE to confirm
+            </label>
             <input
               id="admin-confirm-delete"
               name="confirmDelete"
@@ -510,6 +639,7 @@ export default function AdminDashboard({ setOrgProfile, orgProfile, user }: { se
             />
           </div>
         </div>
+
         <button
           onClick={handleDeactivateAccount}
           disabled={deactivating || confirmText.trim() !== 'DELETE'}
