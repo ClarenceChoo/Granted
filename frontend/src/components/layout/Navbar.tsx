@@ -67,7 +67,6 @@ export default function Navbar({
                     <div className="hidden md:flex space-x-8 text-sm font-medium text-slate-600">
                         <Link to="/discover" className="hover:text-[#0F172A] transition-colors">Discover</Link>
                         <Link to="/my-grants" className="hover:text-[#0F172A] transition-colors">My Grants</Link>
-                        <Link to="/resources" className="hover:text-[#0F172A] transition-colors">Resources</Link>
                         {isAuthenticated && (
                             <Link to="/admin" className="hover:text-[#0F172A] transition-colors">Admin</Link>
                         )}
@@ -109,22 +108,24 @@ export default function Navbar({
             {showSignOut && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center">
                     <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setShowSignOut(false)} />
-                    <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
+                    <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
                         <div className="px-6 pt-6 pb-4 bg-gradient-to-r from-emerald-50 to-white">
                             <div className="flex items-start gap-3">
-                                <div className="bg-[#0F766E] text-white w-10 h-10 rounded-xl flex items-center justify-center">
+                                <div className="bg-[#0F766E] text-white w-10 h-10 rounded-xl flex items-center justify-center shrink-0">
                                     <LogOut className="w-5 h-5" />
                                 </div>
                                 <div>
                                     <h3 className="text-lg font-semibold text-slate-900">Sign out of Granted?</h3>
-                                    <p className="text-sm text-slate-600 mt-1">You will need to sign in again to access saved grants and admin tools.</p>
+                                    <p className="text-sm text-slate-600 mt-1 leading-relaxed">
+                                        You will need to sign in again to access saved grants and admin tools.
+                                    </p>
                                 </div>
                             </div>
                         </div>
                         <div className="px-6 pb-6">
                             {user?.email && (
-                                <div className="mt-4 text-xs text-slate-500">
-                                    Signed in as <span className="font-semibold text-slate-700">{user.email}</span>
+                                <div className="mt-4 text-xs text-slate-500 break-words">
+                                    Signed in as <span className="font-semibold text-slate-700 break-all">{user.email}</span>
                                 </div>
                             )}
                             <div className="mt-6 flex gap-3 justify-end">

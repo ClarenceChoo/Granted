@@ -8,7 +8,6 @@ import Discover from './pages/Discover'
 import GrantDetails from './pages/GrantDetails'
 import SignIn from './pages/SignIn'
 import MyGrants from './pages/MyGrants'
-import Resources from './pages/Resources'
 import AdminDashboard from './pages/AdminDashboard'
 import { GRANTS_DATA } from './data'
 import type { Organization, Grant } from './types'
@@ -216,10 +215,9 @@ export default function App() {
               />
             }
           />
-          <Route path="/discover" element={<Discover />} />
+          <Route path="/discover" element={<Discover isAuthenticated={isAuthenticated} />} />
           <Route path="/grant/:id" element={<GrantDetails />} />
           <Route path="/my-grants" element={<MyGrants />} />
-          <Route path="/resources" element={<Resources />} />
           <Route path="/admin" element={<AdminDashboard setOrgProfile={setOrgProfile} orgProfile={orgProfile} user={user} />} />
           <Route
             path="/signin"
