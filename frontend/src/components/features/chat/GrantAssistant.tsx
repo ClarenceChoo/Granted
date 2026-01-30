@@ -10,18 +10,46 @@ interface GrantAssistantProps {
     currentProfile: Organization
 }
 
-type Step = 'uen' | 'sector' | 'mission' | 'ai_mission' | 'beneficiaries' | 'budget' | 'complete' | 'chat'
+type Step = 'name' | 'uen' | 'sector' | 'mission' | 'ai_mission' | 'beneficiaries' | 'budget' | 'complete' | 'chat'
 
 interface ChatMessage {
     role: 'user' | 'assistant'
     content: string
 }
 
+// Helper function to strip markdown formatting from AI responses
+const stripMarkdown = (text: string): string => {
+    return text
+        // Remove headers (# ## ### etc)
+        .replace(/^#{1,6}\s+/gm, '')
+        // Remove bold (**text** or __text__)
+        .replace(/\*\*([^*]+)\*\*/g, '$1')
+        .replace(/__([^_]+)__/g, '$1')
+        // Remove italic (*text* or _text_)
+        .replace(/\*([^*]+)\*/g, '$1')
+        .replace(/(?<!_)_([^_]+)_(?!_)/g, '$1')
+        // Remove horizontal rules (*** or --- or ___)
+        .replace(/^[\*\-_]{3,}$/gm, '')
+        // Remove bullet points but keep the text
+        .replace(/^[\*\-•]\s+/gm, '• ')
+        // Remove numbered list formatting but keep numbers
+        .replace(/^\d+\.\s+/gm, '')
+        // Remove code blocks
+        .replace(/```[\s\S]*?```/g, '')
+        // Remove inline code
+        .replace(/`([^`]+)`/g, '$1')
+        // Remove links but keep text
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+        // Clean up extra whitespace
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+}
+
 export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, currentProfile }: GrantAssistantProps) {
     const navigate = useNavigate()
-    const [onboardingStep, setOnboardingStep] = useState<Step>('uen')
+    const [onboardingStep, setOnboardingStep] = useState<Step>('name')
 
-    const steps = ['uen', 'sector', 'mission', 'ai_mission', 'beneficiaries', 'budget', 'complete']
+    const steps = ['name', 'uen', 'sector', 'mission', 'ai_mission', 'beneficiaries', 'budget', 'complete']
     const isStepActiveOrPast = (targetStep: Step) => {
         const currentIndex = steps.indexOf(onboardingStep)
         const targetIndex = steps.indexOf(targetStep)
@@ -130,7 +158,7 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
 
             const assistantMessage: ChatMessage = {
                 role: 'assistant',
-                content: data.response || "I couldn't process that. Please try again."
+                content: stripMarkdown(data.response || "I couldn't process that. Please try again.")
             }
             setChatMessages(prev => [...prev, assistantMessage])
         } catch (error) {
@@ -150,8 +178,13 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
         console.debug('GrantAssistant.handleOnboardingSubmit', { step: onboardingStep, val, localProfile, beneficiariesLocal, budgetLocal })
         let updatedProfile = { ...localProfile }
 
-        if (onboardingStep === 'uen') {
-            updatedProfile = { ...updatedProfile, uen: val, name: 'My Organization' }
+        if (onboardingStep === 'name') {
+            updatedProfile = { ...updatedProfile, name: val }
+            setLocalProfile(updatedProfile)
+            onProfileUpdate(updatedProfile)
+            setOnboardingStep('uen')
+        } else if (onboardingStep === 'uen') {
+            updatedProfile = { ...updatedProfile, uen: val }
             setLocalProfile(updatedProfile)
             onProfileUpdate(updatedProfile)
             setOnboardingStep('sector')
@@ -254,19 +287,44 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
                     {/* Chat Body - content from original App.tsx */}
                     <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50">
 
-                        {/* Step 1: Greeting & UEN */}
+                        {/* Step 1: Greeting & Organization Name */}
                         <div className="flex gap-4 animate-slide-up">
                             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1E3A8A] to-[#0F766E] flex items-center justify-center flex-shrink-0 shadow-sm mt-1">
                                 <Building2 className="w-4 h-4 text-white" />
                             </div>
                             <div className="space-y-2 max-w-[85%]">
                                 <div className="bg-white p-4 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 text-slate-700 leading-relaxed">
-                                    <p>Hello! I can help you find relevant funding. First, what is your **Organization UEN**?</p>
+                                    <p>Hello! I can help you find relevant funding. First, what is your <strong>Organization Name</strong>?</p>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Answer 1 */}
+                        {/* Answer 1 - Organization Name */}
+                        {isStepPast('name') && (
+                            <div className="flex gap-4 flex-row-reverse animate-slide-up">
+                                <div className="space-y-2 max-w-[85%]">
+                                    <div className="bg-[#0F766E] p-4 rounded-2xl rounded-tr-none shadow-sm text-white leading-relaxed">
+                                        <p>{localProfile.name}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Step 2: UEN */}
+                        {isStepActiveOrPast('uen') && (
+                            <div className="flex gap-4 animate-slide-up">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1E3A8A] to-[#0F766E] flex items-center justify-center flex-shrink-0 shadow-sm mt-1">
+                                    <Building2 className="w-4 h-4 text-white" />
+                                </div>
+                                <div className="space-y-2 max-w-[85%]">
+                                    <div className="bg-white p-4 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 text-slate-700 leading-relaxed">
+                                        <p>Great! What is your Organization UEN (Unique Entity Number)?</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Answer 2 - UEN */}
                         {isStepPast('uen') && (
                             <div className="flex gap-4 flex-row-reverse animate-slide-up">
                                 <div className="space-y-2 max-w-[85%]">
@@ -277,7 +335,7 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
                             </div>
                         )}
 
-                        {/* Step 2: Sector */}
+                        {/* Step 3: Sector */}
                         {isStepActiveOrPast('sector') && (
                             <div className="flex gap-4 animate-slide-up">
                                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1E3A8A] to-[#0F766E] flex items-center justify-center flex-shrink-0 shadow-sm mt-1">
@@ -560,10 +618,11 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
                                 onChange={onboardingStep === 'chat' ? (e) => setChatInput(e.target.value) : undefined}
                                 placeholder={
                                     onboardingStep === 'chat' ? "Ask me about grants..." :
-                                        onboardingStep === 'uen' ? "Enter UEN (e.g., T08GB0021K)" :
-                                            onboardingStep === 'ai_mission' ? 'AI-suggested mission (editable)' :
-                                                onboardingStep === 'beneficiaries' ? 'Primary beneficiaries (comma separated)' :
-                                                    onboardingStep === 'budget' ? 'Annual budget (e.g., <$100k)' : 'Type your message...'
+                                        onboardingStep === 'name' ? "Enter your organization name" :
+                                            onboardingStep === 'uen' ? "Enter UEN (e.g., T08GB0021K)" :
+                                                onboardingStep === 'ai_mission' ? 'AI-suggested mission (editable)' :
+                                                    onboardingStep === 'beneficiaries' ? 'Primary beneficiaries (comma separated)' :
+                                                        onboardingStep === 'budget' ? 'Annual budget (e.g., <$100k)' : 'Type your message...'
                                 }
                                 disabled={onboardingStep === 'complete' || onboardingStep === 'sector' || isChatLoading}
                                 onKeyDown={(e) => {
