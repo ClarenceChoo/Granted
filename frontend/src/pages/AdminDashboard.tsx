@@ -1,5 +1,5 @@
 // AdminDashboard.tsx
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import type { Sector } from '../types'
 import { fetchGrants } from '../services/grantsService'
@@ -36,7 +36,6 @@ export default function AdminDashboard({
   const [grants, setGrants] = useState<Grant[]>([])
   const [recipient, setRecipient] = useState('')
 
-  // NPO question fields — initialize empty, then populate from props or local storage
   const [orgName, setOrgName] = useState('')
   const [orgSector, setOrgSector] = useState<Organization['sector']>('Social Service')
   const [mission, setMission] = useState('')
@@ -60,43 +59,49 @@ export default function AdminDashboard({
   const hasLoadedRemoteProfileRef = useRef(false)
   const hasAppliedAiProfileRef = useRef(false)
 
-  // ✅ NEW: prevents “fighting” the user while they click/type
   const isDirtyRef = useRef(false)
-
-  // ✅ NEW: ensure local hydration runs at most once (before remote wins)
   const hasHydratedLocalRef = useRef(false)
 
   const markDirty = () => {
     isDirtyRef.current = true
   }
 
-  const normalizeBeneficiaries = (value: any) => {
+  const normalizeBeneficiaries = useCallback((value: any) => {
     if (Array.isArray(value)) return value.join(', ')
     if (typeof value === 'string') return value
     return value ? String(value) : ''
-  }
+  }, [])
 
-  // ✅ updated: won’t overwrite fields once user has started editing (unless forced)
-  const applyProfileToState = (
-    profile: Partial<Organization> & { beneficiaries?: any; annualBudget?: any; budget?: any; description?: any; mission?: any; email?: any },
-    opts?: { force?: boolean }
-  ) => {
-    if (!opts?.force && isDirtyRef.current) return
+  const applyProfileToState = useCallback(
+    (
+      profile: Partial<Organization> & {
+        beneficiaries?: any
+        annualBudget?: any
+        budget?: any
+        description?: any
+        mission?: any
+        email?: any
+      },
+      opts?: { force?: boolean }
+    ) => {
+      if (!opts?.force && isDirtyRef.current) return
 
-    const nextName = profile.name || ''
-    const nextSector = (profile.sector as Organization['sector']) || 'Social Service'
-    const nextMission = profile.description || profile.mission || ''
-    const nextBeneficiaries = normalizeBeneficiaries(profile.beneficiaries || '')
-    const nextBudget = (profile.annualBudget || profile.budget) ? String(profile.annualBudget || profile.budget) : ''
-    const nextEmail = (profile as any).email || ''
+      const nextName = profile.name || ''
+      const nextSector = (profile.sector as Organization['sector']) || 'Social Service'
+      const nextMission = profile.description || profile.mission || ''
+      const nextBeneficiaries = normalizeBeneficiaries(profile.beneficiaries || '')
+      const nextBudget = (profile.annualBudget || profile.budget) ? String(profile.annualBudget || profile.budget) : ''
+      const nextEmail = (profile as any).email || ''
 
-    if (nextName !== orgName) setOrgName(nextName)
-    if (nextSector !== orgSector) setOrgSector(nextSector)
-    if (nextMission !== mission) setMission(nextMission)
-    if (nextBeneficiaries !== beneficiaries) setBeneficiaries(nextBeneficiaries)
-    if (nextBudget !== annualBudget) setAnnualBudget(nextBudget)
-    if (nextEmail && nextEmail !== recipient) setRecipient(nextEmail)
-  }
+      setOrgName(prev => (prev === nextName ? prev : nextName))
+      setOrgSector(prev => (prev === nextSector ? prev : nextSector))
+      setMission(prev => (prev === nextMission ? prev : nextMission))
+      setBeneficiaries(prev => (prev === nextBeneficiaries ? prev : nextBeneficiaries))
+      setAnnualBudget(prev => (prev === nextBudget ? prev : nextBudget))
+      setRecipient(prev => (nextEmail && prev !== nextEmail ? nextEmail : prev))
+    },
+    [normalizeBeneficiaries]
+  )
 
   useEffect(() => {
     const load = async () => {
@@ -106,11 +111,21 @@ export default function AdminDashboard({
     load()
   }, [])
 
-  // Load current user's NPO profile from the backend (if authenticated)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  /**
+   * ✅ IMPORTANT FIX:
+   * Only call the protected backend profile endpoint if we actually have a token.
+   * If authFetch() does redirects/reloads on 401 in prod, calling it without a token causes flicker + routing “stuck”.
+   */
   useEffect(() => {
     let isCancelled = false
+
     const loadProfile = async (emailKey: string) => {
+      const token = getStoredIdToken() || localStorage.getItem('granted_token')
+      if (!token) {
+        // No token — do NOT call authFetch(). Let local hydration handle the UI.
+        return
+      }
+
       try {
         const payload = await fetchProfileOnce(emailKey)
         if (isCancelled) return
@@ -118,9 +133,7 @@ export default function AdminDashboard({
         const profile = (payload && payload.data) ? payload.data : payload
         if (!profile) return
 
-        // ✅ Will not clobber user typing
         applyProfileToState(profile)
-
         hasLoadedRemoteProfileRef.current = true
 
         const updatedProfile = {
@@ -149,37 +162,37 @@ export default function AdminDashboard({
     loadedEmailRef.current = emailKey
 
     loadProfile(emailKey)
-    return () => { isCancelled = true }
-  }, [user?.email])
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => {
+      isCancelled = true
+    }
+  }, [applyProfileToState, setOrgProfile, user?.email])
+
   useEffect(() => {
-    if (user?.email && !recipient) setRecipient(user.email)
+    if (user?.email) {
+      setRecipient(prev => (prev ? prev : user.email!))
+    }
   }, [user?.email])
 
-  // Apply AI profile (from navigation) — use functional updates to avoid stale closures
   useEffect(() => {
     if (aiProfile && !hasAppliedAiProfileRef.current) {
       hasAppliedAiProfileRef.current = true
-      console.log('Admin received aiProfile:', aiProfile)
-
-      // ✅ Don’t fight user if they already started editing
       if (!isDirtyRef.current) {
-        setOrgName(prev => aiProfile.name ?? prev)
-        setOrgSector(prev => (aiProfile.sector as Organization['sector']) ?? prev)
-        setMission(prev => aiProfile.mission ?? prev)
-        setBeneficiaries(prev => normalizeBeneficiaries(aiProfile.beneficiaries ?? prev))
-        setAnnualBudget(prev => aiProfile.annualBudget ?? prev)
+        applyProfileToState(
+          {
+            name: aiProfile.name,
+            sector: aiProfile.sector,
+            mission: aiProfile.mission,
+            beneficiaries: aiProfile.beneficiaries,
+            annualBudget: aiProfile.annualBudget,
+          },
+          { force: true }
+        )
       }
-
       setAiSuggestion(aiProfile.suggestion || null)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aiProfile])
+  }, [aiProfile, applyProfileToState])
 
-  // Populate fields from provided orgProfile prop or from locally stored user profile
-  // ✅ updated: hydrate at most once (and never after remote has loaded)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (hasLoadedRemoteProfileRef.current) return
     if (hasHydratedLocalRef.current) return
@@ -193,48 +206,34 @@ export default function AdminDashboard({
           applyProfileToState(stored)
           return
         }
-      } catch {
-        // ignore parse errors
-      }
+      } catch {}
     }
 
-    // prefer explicit orgProfile prop
     if (orgProfile) {
       applyProfileToState(orgProfile)
-
       const usersRaw = localStorage.getItem('granted_users')
       if (usersRaw && user?.email) {
         try {
           const users = JSON.parse(usersRaw)
           const entry = users[user.email]
-          if (entry?.profile) {
-            applyProfileToState(entry.profile)
-          }
-        } catch {
-          // ignore parse errors
-        }
+          if (entry?.profile) applyProfileToState(entry.profile)
+        } catch {}
       }
       return
     }
 
-    // fallback: if a logged-in user exists, try load their saved profile from localStorage
     if (user?.email) {
       const usersRaw = localStorage.getItem('granted_users')
       if (usersRaw) {
         try {
           const users = JSON.parse(usersRaw)
           const entry = users[user.email]
-          if (entry?.profile) {
-            applyProfileToState(entry.profile)
-          }
-        } catch {
-          // ignore
-        }
+          if (entry?.profile) applyProfileToState(entry.profile)
+        } catch {}
       }
     }
-  }, [user?.email])
+  }, [applyProfileToState, orgProfile, user?.email])
 
-  // Auto-dismiss notifications after a short duration
   useEffect(() => {
     if (!notification) return
     const t = setTimeout(() => setNotification(null), 6000)
@@ -249,7 +248,6 @@ export default function AdminDashboard({
       mission,
     }
 
-    // Compute top matches using matching util and take top 3
     const orgForMatch: Organization = {
       name: orgName,
       uen: 'T0000000X',
@@ -257,7 +255,6 @@ export default function AdminDashboard({
       mission,
     }
 
-    // Demo override: if the profile mentions children/kids/youth, prefer kid-related grants
     const childRegex = /\b(child|children|kid|kids|youth|young)\b/i
     const looksForKids = childRegex.test(beneficiaries) || childRegex.test(mission)
 
@@ -276,10 +273,7 @@ export default function AdminDashboard({
     if (topGrants.length === 0) {
       const matched = getMatchedGrants(grants, orgForMatch)
       topGrants = matched.slice(0, 3)
-      if (topGrants.length === 0) {
-        // fallback to first 3 if matching returns none
-        topGrants = grants.slice(0, 3)
-      }
+      if (topGrants.length === 0) topGrants = grants.slice(0, 3)
     }
 
     const token = getStoredIdToken()
@@ -302,7 +296,9 @@ export default function AdminDashboard({
       setNotification({ type: 'success', message: `Email sent to ${recipient}.` })
     } catch (err: any) {
       setNotification({ type: 'error', message: 'Failed to send — preview opened in a new tab.' })
-      const previewHtml = `<html><body><h2>Preview: Top ${topGrants.length} Grants for ${org.name}</h2>${topGrants.map(g => `<h3>${g.name}</h3><p>${g.description}</p>`).join('')}</body></html>`
+      const previewHtml = `<html><body><h2>Preview: Top ${topGrants.length} Grants for ${org.name}</h2>${topGrants
+        .map(g => `<h3>${g.name}</h3><p>${g.description}</p>`)
+        .join('')}</body></html>`
       const blob = new Blob([previewHtml], { type: 'text/html' })
       const url = URL.createObjectURL(blob)
       window.open(url, '_blank')
@@ -319,7 +315,6 @@ export default function AdminDashboard({
       description: mission,
       beneficiaries: beneficiaries.split(',').map(s => s.trim()).filter(Boolean),
       budget: (() => {
-        // Try to extract a number from the annualBudget input (which may be a range or string)
         const digits = annualBudget.replace(/[^0-9.]/g, '')
         const n = Number(digits)
         return Number.isFinite(n) && n > 0 ? n : 0
@@ -328,7 +323,6 @@ export default function AdminDashboard({
 
     const token = getStoredIdToken() || localStorage.getItem('granted_token')
     if (!token) {
-      // No token: fall back to local/demo update
       if (setOrgProfile) {
         setOrgProfile({ uen: 'T0000000X', name: orgName, sector: orgSector, mission })
         setNotification({ type: 'success', message: 'Profile updated locally (no auth token).' })
@@ -362,12 +356,8 @@ export default function AdminDashboard({
         annualBudget,
       }
 
-      // Apply server response to app state if possible
-      if (setOrgProfile) {
-        setOrgProfile(updatedProfile)
-      }
+      if (setOrgProfile) setOrgProfile(updatedProfile)
 
-      // Persist locally so refresh keeps the updated profile
       const email = user?.email || localStorage.getItem('granted_user_email')
       localStorage.setItem('granted_org_profile', JSON.stringify({ ...updatedProfile, email }))
       if (email) {
@@ -383,12 +373,11 @@ export default function AdminDashboard({
               }
               localStorage.setItem('granted_users', JSON.stringify(users))
             }
-          } catch {
-            // ignore parse errors
-          }
+          } catch {}
         }
         localStorage.setItem('granted_user_profile', JSON.stringify({ ...updatedProfile, email }))
       }
+
       setNotification({ type: 'success', message: 'Organization profile updated on server.' })
     } catch (err: any) {
       setNotification({ type: 'error', message: 'Update request failed: ' + (err?.message || String(err)) })
@@ -470,9 +459,6 @@ export default function AdminDashboard({
               <div>
                 <button
                   onClick={() => {
-                    // reapply suggestion to fields
-                    // ✅ FIX: org name no-op -> actually apply
-                    // ✅ force apply (this is an explicit user action)
                     applyProfileToState(
                       {
                         name: aiProfile?.name,
@@ -614,6 +600,7 @@ export default function AdminDashboard({
       <div className="bg-white p-4 rounded-lg shadow-sm">
         <div className="mb-2 font-medium text-red-700">Danger Zone</div>
         <div className="text-sm text-slate-600 mb-3">Deactivate or delete your account. This action may be irreversible.</div>
+
         <div className="grid md:grid-cols-2 gap-3 mb-4">
           <div className="md:col-span-2">
             <label htmlFor="admin-deactivate-reason" className="text-xs font-semibold">
