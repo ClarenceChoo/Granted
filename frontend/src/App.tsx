@@ -189,32 +189,6 @@ export default function App() {
       .filter(Boolean) as Grant[]
   }
 
-  function AppRoutes() {
-    return (
-      <Routes>
-        <Route path="/" element={
-          <Home
-            matchedGrants={displayedMatchedGrants}
-            orgProfile={orgProfile}
-            onOpenChat={() => setIsChatOpen(true)}
-            isComplete={isOnboardingComplete}
-            isLoading={isHomeLoading}
-            isAuthenticated={isAuthenticated}
-          />
-        } />
-        <Route path="/discover" element={<Discover />} />
-        <Route path="/grant/:id" element={<GrantDetails />} />
-        <Route path="/my-grants" element={<MyGrants />} />
-        <Route path="/resources" element={<Resources />} />
-        <Route path="/admin" element={<AdminDashboard setOrgProfile={setOrgProfile} orgProfile={orgProfile} user={user} />} />
-        <Route
-          path="/signin"
-          element={<SignIn onAuthSuccess={(profile: any) => { setIsAuthenticated(true); setUser(profile); }} />}
-        />
-      </Routes>
-    )
-  }
-
   return (
     <BrowserRouter>
       <SavedGrantsProvider>
@@ -228,7 +202,30 @@ export default function App() {
         user={user}
         setUser={setUser}
       >
-        <AppRoutes />
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <Home
+                matchedGrants={displayedMatchedGrants}
+                orgProfile={orgProfile}
+                onOpenChat={() => setIsChatOpen(true)}
+                isComplete={isOnboardingComplete}
+                isLoading={isHomeLoading}
+                isAuthenticated={isAuthenticated}
+              />
+            }
+          />
+          <Route path="/discover" element={<Discover />} />
+          <Route path="/grant/:id" element={<GrantDetails />} />
+          <Route path="/my-grants" element={<MyGrants />} />
+          <Route path="/resources" element={<Resources />} />
+          <Route path="/admin" element={<AdminDashboard setOrgProfile={setOrgProfile} orgProfile={orgProfile} user={user} />} />
+          <Route
+            path="/signin"
+            element={<SignIn onAuthSuccess={(profile: any) => { setIsAuthenticated(true); setUser(profile); }} />}
+          />
+        </Routes>
         </MainLayout>
       </SavedGrantsProvider>
     </BrowserRouter>

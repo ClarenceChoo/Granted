@@ -9,6 +9,21 @@ import type { Grant, Organization } from '../types'
 
 const profileRequestCache = new Map<string, Promise<any>>()
 
+const ADMIN_DEBUG =
+  !import.meta.env.DEV &&
+  typeof window !== 'undefined' &&
+  typeof window.localStorage !== 'undefined' &&
+  window.localStorage.getItem('debug_admin') === '1'
+
+function debugAdmin(message: string, data?: Record<string, any>) {
+  if (!ADMIN_DEBUG) return
+  if (data) {
+    console.debug('[AdminDashboard]', message, data)
+  } else {
+    console.debug('[AdminDashboard]', message)
+  }
+}
+
 async function fetchProfileOnce(emailKey: string) {
   if (profileRequestCache.has(emailKey)) return profileRequestCache.get(emailKey)!
   const p = (async () => {
@@ -104,6 +119,11 @@ export default function AdminDashboard({
   )
 
   useEffect(() => {
+    debugAdmin('mount')
+    return () => debugAdmin('unmount')
+  }, [])
+
+  useEffect(() => {
     const load = async () => {
       const data = await fetchGrants()
       setGrants(data)
@@ -121,8 +141,10 @@ export default function AdminDashboard({
 
     const loadProfile = async (emailKey: string) => {
       const token = getStoredIdToken() || localStorage.getItem('granted_token')
+      debugAdmin('loadProfile:start', { emailKey, hasToken: !!token })
       if (!token) {
         // No token — do NOT call authFetch(). Let local hydration handle the UI.
+        debugAdmin('loadProfile:skip_no_token', { emailKey })
         return
       }
 
@@ -135,6 +157,7 @@ export default function AdminDashboard({
 
         applyProfileToState(profile)
         hasLoadedRemoteProfileRef.current = true
+        debugAdmin('loadProfile:success', { emailKey })
 
         const updatedProfile = {
           uen: profile.uen || 'T0000000X',
@@ -154,11 +177,15 @@ export default function AdminDashboard({
         if (!isCancelled) {
           setNotification({ type: 'error', message: 'Failed to load profile: ' + (err?.message || String(err)) })
         }
+        debugAdmin('loadProfile:error', { emailKey, message: err?.message || String(err) })
       }
     }
 
     const emailKey = user?.email || localStorage.getItem('granted_user_email') || 'anonymous'
-    if (loadedEmailRef.current === emailKey) return
+    if (loadedEmailRef.current === emailKey) {
+      debugAdmin('loadProfile:skip_cached_email', { emailKey })
+      return
+    }
     loadedEmailRef.current = emailKey
 
     loadProfile(emailKey)
@@ -177,6 +204,7 @@ export default function AdminDashboard({
   useEffect(() => {
     if (aiProfile && !hasAppliedAiProfileRef.current) {
       hasAppliedAiProfileRef.current = true
+      debugAdmin('aiProfile:apply', { hasSuggestion: !!aiProfile?.suggestion })
       if (!isDirtyRef.current) {
         applyProfileToState(
           {
@@ -197,12 +225,14 @@ export default function AdminDashboard({
     if (hasLoadedRemoteProfileRef.current) return
     if (hasHydratedLocalRef.current) return
     hasHydratedLocalRef.current = true
+    debugAdmin('hydrate:local:start')
 
     const storedOrgRaw = localStorage.getItem('granted_org_profile')
     if (storedOrgRaw) {
       try {
         const stored = JSON.parse(storedOrgRaw)
         if (!user?.email || !stored?.email || stored.email === user.email) {
+          debugAdmin('hydrate:local:stored_org_profile', { hasEmail: !!stored?.email })
           applyProfileToState(stored)
           return
         }
@@ -210,6 +240,7 @@ export default function AdminDashboard({
     }
 
     if (orgProfile) {
+      debugAdmin('hydrate:local:org_profile')
       applyProfileToState(orgProfile)
       const usersRaw = localStorage.getItem('granted_users')
       if (usersRaw && user?.email) {
@@ -223,6 +254,7 @@ export default function AdminDashboard({
     }
 
     if (user?.email) {
+      debugAdmin('hydrate:local:granted_users')
       const usersRaw = localStorage.getItem('granted_users')
       if (usersRaw) {
         try {
