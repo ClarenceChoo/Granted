@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
 // Firebase removed: rely on backend tokens stored locally
 import type { Dispatch, SetStateAction } from 'react'
+import { clearLocalSession } from '../../services/authService'
 import grantedLogo from '../../assets/granted logo.svg'
 
 export default function Navbar({
@@ -29,14 +30,7 @@ export default function Navbar({
     const ref = useRef<HTMLDivElement | null>(null)
 
     const handleSignOut = () => {
-        // clear local auth artifacts
-        localStorage.removeItem('idToken')
-        localStorage.removeItem('refreshToken')
-        localStorage.removeItem('uid')
-        localStorage.removeItem('granted_token')
-        localStorage.removeItem('granted_user_email')
-        localStorage.removeItem('granted_user_profile')
-        // No Firebase SDK: tokens removed from storage
+        clearLocalSession(user?.email)
 
         setIsAuthenticated?.(false)
         setUser?.(null)

@@ -25,6 +25,26 @@ export function logoutLocal() {
   localStorage.removeItem('granted_token')
 }
 
+export function clearLocalSession(email?: string | null) {
+  logoutLocal()
+  localStorage.removeItem('granted_user_email')
+  localStorage.removeItem('granted_user_profile')
+  localStorage.removeItem('granted_org_profile')
+
+  if (!email) return
+  const usersRaw = localStorage.getItem('granted_users')
+  if (!usersRaw) return
+  try {
+    const users = JSON.parse(usersRaw)
+    if (users && users[email]) {
+      delete users[email]
+      localStorage.setItem('granted_users', JSON.stringify(users))
+    }
+  } catch {
+    // ignore parse errors
+  }
+}
+
 export function getStoredIdToken() {
   // Prefer standard idToken but fall back to legacy `granted_token` if present
   return localStorage.getItem('idToken') || localStorage.getItem('granted_token')

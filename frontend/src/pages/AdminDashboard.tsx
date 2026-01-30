@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import type { Sector } from '../types'
 import { fetchGrants } from '../services/grantsService'
-import { authFetch, getStoredIdToken, logoutLocal } from '../services/authService'
+import { authFetch, clearLocalSession, getStoredIdToken } from '../services/authService'
 import { getMatchedGrants } from '../utils/matching'
 import type { Grant, Organization } from '../types'
 
@@ -43,10 +43,14 @@ export default function AdminDashboard({
   setOrgProfile,
   orgProfile,
   user,
+  setIsAuthenticated,
+  setUser,
 }: {
   setOrgProfile?: (p: Organization) => void
   orgProfile?: Organization
   user?: { name?: string; email?: string } | null
+  setIsAuthenticated?: (value: boolean) => void
+  setUser?: (value: { name?: string; email?: string } | null) => void
 }) {
   const [grants, setGrants] = useState<Grant[]>([])
   const [recipient, setRecipient] = useState('')
@@ -442,7 +446,10 @@ export default function AdminDashboard({
         throw new Error(`${res.status} ${txt}`)
       }
 
-      logoutLocal()
+      clearLocalSession(user?.email || localStorage.getItem('granted_user_email'))
+      setIsAuthenticated?.(false)
+      setUser?.(null)
+      setOrgProfile?.({ uen: '', name: 'My Organization', sector: 'Social Service', mission: '' })
       setDeactivated(true)
       setTimeout(() => navigate('/signin'), 2500)
     } catch (err: any) {

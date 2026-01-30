@@ -38,6 +38,37 @@ export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: an
         localStorage.setItem('granted_user_profile', JSON.stringify(profile))
     }
 
+    const normalizeBeneficiaries = (input: unknown): string[] => {
+        if (Array.isArray(input)) {
+            return input.map(item => String(item).trim()).filter(Boolean)
+        }
+        if (typeof input === 'string') {
+            return input
+                .split(',')
+                .map(item => item.trim())
+                .filter(Boolean)
+        }
+        return []
+    }
+
+    const parseBudgetValue = (input: unknown): number => {
+        if (typeof input === 'number') {
+            return Number.isFinite(input) ? input : 0
+        }
+        if (typeof input !== 'string') return 0
+        const normalized = input.trim().toLowerCase()
+        if (!normalized) return 0
+        const cleaned = normalized.replace(/,/g, '')
+        const match = cleaned.match(/([0-9]*\.?[0-9]+)/)
+        if (!match) return 0
+        let value = Number(match[1])
+        if (!Number.isFinite(value)) return 0
+        if (cleaned.includes('k')) value *= 1_000
+        else if (cleaned.includes('m')) value *= 1_000_000
+        else if (cleaned.includes('b')) value *= 1_000_000_000
+        return value
+    }
+
     // AI Auto-fill Simulation sequence
     useEffect(() => {
         if (effectivePrefill) {
@@ -105,6 +136,8 @@ export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: an
             if (mode === 'register') {
                 // Build payload for backend; AI prefill (location.state) may contain extra fields
                 const aiData = (prefillData || (location.state as any)) as any
+                const beneficiaries = normalizeBeneficiaries(aiData?.beneficiaries)
+                const budget = parseBudgetValue(aiData?.budget ?? aiData?.annualBudget)
                 const payload: any = {
                     email: formData.email,
                     password: formData.password,
@@ -112,8 +145,8 @@ export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: an
                     uen: formData.uen,
                     sector: formData.sector,
                     description: aiData?.mission || aiData?.description || '',
-                    beneficiaries: aiData?.beneficiaries || [],
-                    budget: aiData?.budget || 0,
+                    beneficiaries,
+                    budget,
                 }
 
                 const res = await fetch('https://create-npo-kun7hshp7q-as.a.run.app', {
@@ -129,11 +162,12 @@ export default function SignIn({ onAuthSuccess }: { onAuthSuccess?: (profile: an
                 }
 
                 const created = await res.json()
+                const createdData = created?.data || created
 
                 // Save user locally so sign-in can work without a dedicated sign-in API
                 const usersRaw = localStorage.getItem('granted_users')
                 const users = usersRaw ? JSON.parse(usersRaw) : {}
-                users[formData.email] = { password: formData.password, profile: { email: formData.email, name: formData.name, uen: formData.uen, sector: formData.sector, ...created } }
+                users[formData.email] = { password: formData.password, profile: { email: formData.email, name: formData.name, uen: formData.uen, sector: formData.sector, ...createdData } }
                 localStorage.setItem('granted_users', JSON.stringify(users))
 
                 // After creating the NPO on your backend, call the login endpoint to obtain idToken/refreshToken

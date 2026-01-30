@@ -218,7 +218,18 @@ export default function App() {
           <Route path="/discover" element={<Discover isAuthenticated={isAuthenticated} />} />
           <Route path="/grant/:id" element={<GrantDetails />} />
           <Route path="/my-grants" element={<MyGrants />} />
-          <Route path="/admin" element={<AdminDashboard setOrgProfile={setOrgProfile} orgProfile={orgProfile} user={user} />} />
+          <Route
+            path="/admin"
+            element={
+              <AdminDashboard
+                setOrgProfile={setOrgProfile}
+                orgProfile={orgProfile}
+                user={user}
+                setIsAuthenticated={setIsAuthenticated}
+                setUser={setUser}
+              />
+            }
+          />
           <Route
             path="/signin"
             element={<SignIn onAuthSuccess={(profile: any) => { setIsAuthenticated(true); setUser(profile); }} />}

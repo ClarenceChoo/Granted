@@ -128,6 +128,12 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
         }
     }
 
+    const normalizeBeneficiaries = (input: string) =>
+        input
+            .split(',')
+            .map(item => item.trim())
+            .filter(Boolean)
+
     // refineMissionText removed — AI refinement is handled by `fetchAiRefinement` and `createAISuggestion`.
 
     const fetchAiRefinement = async (mission: string, sector: string = 'Social Service') => {
@@ -231,12 +237,16 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
             setOnboardingStep('ai_mission')
             setIsTyping(false)
         } else if (onboardingStep === 'beneficiaries') {
+            const normalizedBeneficiaries = normalizeBeneficiaries(val)
             setBeneficiariesLocal(val)
+            updatedProfile = { ...updatedProfile, beneficiaries: normalizedBeneficiaries }
+            setLocalProfile(updatedProfile)
+            onProfileUpdate(updatedProfile)
             setOnboardingStep('budget')
         } else if (onboardingStep === 'budget') {
             setBudgetLocal(val)
             // finalize
-            updatedProfile = { ...updatedProfile, mission: updatedProfile.mission || '' }
+            updatedProfile = { ...updatedProfile, mission: updatedProfile.mission || '', annualBudget: val }
             setLocalProfile(updatedProfile)
             onProfileUpdate(updatedProfile)
             setOnboardingStep('complete')
@@ -247,12 +257,12 @@ export default function GrantAssistant({ isOpen, onClose, onProfileUpdate, curre
                 uen: updatedProfile.uen || 'T0000000X',
                 sector: updatedProfile.sector || 'Arts & Heritage',
                 mission: updatedProfile.mission || val,
-                beneficiaries: beneficiariesLocal,
-                annualBudget: budgetLocal,
+                beneficiaries: (updatedProfile as any).beneficiaries || normalizeBeneficiaries(beneficiariesLocal),
+                annualBudget: val,
                 suggestion: aiSuggestion?.suggestions || createAISuggestion({
                     ...updatedProfile,
-                    beneficiaries: beneficiariesLocal,
-                    annualBudget: budgetLocal,
+                    beneficiaries: (updatedProfile as any).beneficiaries || normalizeBeneficiaries(beneficiariesLocal),
+                    annualBudget: val,
                 }),
             }
 
