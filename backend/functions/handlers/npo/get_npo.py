@@ -18,14 +18,14 @@ logger.setLevel(logging.INFO)
 @https_fn.on_request()
 def get_npo(req: https_fn.Request) -> https_fn.Response:
     """
-    Get NPO (Non-Profit Organisation) profile information by UID.
+    Get NPO (Non-Profit Organisation) profile information.
     Requires Firebase Auth token in Authorization header.
     
-    Query Parameters:
-        uid: (optional) The UID of the NPO to retrieve. If not provided, returns the authenticated user's profile.
+    Security: Users can ONLY access their own NPO profile.
+    The NPO UID is extracted from the verified auth token, not from request parameters.
     
     Returns:
-        Response: JSON response with NPO data or error
+        Response: JSON response with authenticated user's NPO data or error
     """
     # Handle CORS preflight request
     if req.method == "OPTIONS":
@@ -69,8 +69,9 @@ def get_npo(req: https_fn.Request) -> https_fn.Response:
                 mimetype="application/json"
             )
         
-        # Get UID from query parameter, default to authenticated user's UID
-        target_uid = req.args.get("uid", authenticated_uid)
+        # Security: Only allow users to access their own NPO information
+        # Ignore any query parameter and always use authenticated user's UID
+        target_uid = authenticated_uid
         
         # Get Firestore client
         db = firestore.client()

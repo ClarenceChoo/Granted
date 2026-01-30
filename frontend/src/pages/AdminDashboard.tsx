@@ -58,6 +58,7 @@ export default function AdminDashboard({
 
   const loadedEmailRef = useRef<string | null>(null)
   const hasLoadedRemoteProfileRef = useRef(false)
+  const hasAppliedAiProfileRef = useRef(false)
 
   // ✅ NEW: prevents “fighting” the user while they click/type
   const isDirtyRef = useRef(false)
@@ -106,6 +107,7 @@ export default function AdminDashboard({
   }, [])
 
   // Load current user's NPO profile from the backend (if authenticated)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     let isCancelled = false
     const loadProfile = async (emailKey: string) => {
@@ -148,15 +150,17 @@ export default function AdminDashboard({
 
     loadProfile(emailKey)
     return () => { isCancelled = true }
-  }, [setOrgProfile, user?.email])
+  }, [user?.email])
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (user?.email && !recipient) setRecipient(user.email)
-  }, [user?.email, recipient])
+  }, [user?.email])
 
   // Apply AI profile (from navigation) — use functional updates to avoid stale closures
   useEffect(() => {
-    if (aiProfile) {
+    if (aiProfile && !hasAppliedAiProfileRef.current) {
+      hasAppliedAiProfileRef.current = true
       console.log('Admin received aiProfile:', aiProfile)
 
       // ✅ Don’t fight user if they already started editing
