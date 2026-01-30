@@ -21,33 +21,13 @@ set_global_options(
 initialize_app()
 
 # Import handlers
-from handlers.healthcheck import healthcheck
-from handlers.send_email import send_hello_world_email
-from handlers.sync_grants import sync_grants_daily, sync_grants_manual
-from handlers.send_grant_emails import send_weekly_grant_emails, send_grant_emails_manual
 
 # Import matching handlers (AI-powered grant matching)
-from handlers.matching.match_cron import match_grants_daily
-from handlers.matching.match_http import match_grants_manual
-from handlers.matching.match_firestore import on_npo_change, on_grant_change
-from handlers.matching.get_matches import get_matches
 
 # Import grants handlers
-from handlers.grants.get_grant import get_grant
-from handlers.grants.search_grants import search_grants
 
 # Import NPO handlers
-from handlers.npo.create_npo import create_npo
-from handlers.npo.get_npo import get_npo
-from handlers.npo.update_npo import update_npo
-from handlers.npo.login_npo import login_npo
-from handlers.npo.deactivate_npo import deactivate_npo
 
 # Import saved grants handlers
-from handlers.saved_grants.save_grant import save_grant
-from handlers.saved_grants.unsave_grant import unsave_grant
-from handlers.saved_grants.get_saved_grants import get_saved_grants
 
 # Import AI handlers (Gemini-powered features)
-from handlers.ai.chat_refine import chat_refine
-from handlers.ai.chat import ai_chat

@@ -1,0 +1,6 @@
+{
+  "chat_refine": {
+    "system_role": "professional grant writer for Singapore non-profit",
+    "template": "Act as a professional grant writer for a Singapore non-profit in the '{sector}' sector.\n\nThe user has provided this rough mission statement: \"{mission}\"\n\nTask 1: Rewrite this mission statement to be more professional, impactful, and grant-ready. Keep it under 50 words.\n\nTask 2: Suggest a personalized \"Grant Opportunity Strategy\" blurb (2-3 sentences) explaining what kind of grants they should target.\n\nReturn the output purely as a JSON object with this structure:\n{{\n    \"refined_mission\": \"...\",\n    \"strategy_blurb\": \"...\"\n}}\nDo not include markdown formatting like ```json. Just the raw JSON string."
+  }
+}

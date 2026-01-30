@@ -1,6 +1,5 @@
 """Example test file to get started."""
 
-import pytest
 
 
 def test_example():
