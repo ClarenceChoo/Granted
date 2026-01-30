@@ -25,11 +25,10 @@ How might non-profit organisations "pull" information about grants from the OurS
 
 ### Tech Stack
 
-- **Frontend**: Vite + React + TypeScript (NPO interface)
-- **Backend**: Python with Firebase Functions
-- **Database**: Firestore for NPO profiles, grants, saved grants, and match data
-- **AI/LLM**: OpenAI for chat interactions and grant matching
-- **Email**: Firebase Extension (firestore-send-email) for automated grant notifications
+- **Frontend**: Vite + React + TypeScript + Tailwind CSS + Vercel
+- **Backend**: Firebase Cloud Functions + Python SDK
+- **Database**: Firestore (NoSQL; storing NPO, Grants, & Match Information)
+- **AI/LLM**: OpenAI GPT-4o for chat interactions and grant matching
 - **Authentication**: Firebase Auth
 
 ### Challenges
@@ -129,22 +128,26 @@ If your backend uses `uvicorn`/`gunicorn`/`flask` adapt the command accordingly.
 The project uses Firebase's **firestore-send-email** extension to automatically send grant notifications to NPOs:
 
 **How it works:**
+
 1. When matches are created, the system adds email documents to the Firestore `mail` collection
 2. The Firebase extension monitors this collection and sends emails automatically
 3. Email templates are stored in `backend/functions/template/` and rendered with grant data
 
 **Email Features:**
+
 - Mobile-responsive HTML templates with grant details
 - Personalized recipient information
 - Direct links to grant details and application pages
 - Automatic tracking of email delivery status
 
 **Configuration:**
+
 - Extension settings: `backend/extensions/firestore-send-email.env`
 - Email templates: `backend/functions/template/email_template_updated.html`
 - Test emails: Use the `EmailTester` component in the frontend (`frontend/src/components/features/email/EmailTester.tsx`)
 
 **Handlers:**
+
 - `send_email.py` - Manual email sending endpoint
 - `send_grant_emails.py` - Automated grant notification emails
 
@@ -154,33 +157,50 @@ Serverless handlers live in `backend/functions/`. See `backend/functions/require
 
 ### Project Structure
 
-```
+```txt
 Granted/
-├── frontend/                     # Vite + React + TypeScript app
+├── frontend/
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── features/         # Feature components (chat, email, grants)
-│   │   │   └── layout/           # Layout components (navbar, main layout)
-│   │   ├── contexts/             # React contexts (SavedGrants)
-│   │   ├── pages/                # Page components (Home, Discover, MyGrants, etc.)
-│   │   ├── services/             # API service layer (auth, email, grants, matches)
-│   │   └── utils/                # Utility functions
-│   └── public/                   # Static assets
+│   │   │   ├── features/
+│   │   │   │   ├── chat/
+│   │   │   │   ├── email/
+│   │   │   │   └── grants/
+│   │   │   └── layout/
+│   │   ├── contexts/
+│   │   ├── pages/
+│   │   ├── services/
+│   │   ├── utils/
+│   │   ├── App.tsx
+│   │   ├── firebase.ts
+│   │   └── types.ts
+│   ├── public/
+│   ├── package.json
+│   ├── vite.config.ts
+│   ├── vercel.json
+│   └── eslint.config.js
 ├── backend/
-│   ├── functions/                # Firebase Cloud Functions
+│   ├── functions/
 │   │   ├── handlers/
-│   │   │   ├── ai/               # Chat and AI-powered features
-│   │   │   ├── grants/           # Grant search and retrieval
-│   │   │   ├── matching/         # Matching engine (HTTP, Firestore, CRON)
-│   │   │   ├── npo/              # NPO profile management
-│   │   │   └── saved_grants/     # Saved grants functionality
-│   │   ├── services/             # Business logic services
-│   │   ├── template/             # Email templates
-│   │   └── tests/                # Unit tests
-│   ├── extensions/               # Firebase extension configs
-│   ├── firebase.json             # Firebase configuration
-│   └── firestore.rules           # Firestore security rules
-├── assets/                       # Shared assets (images, demo data)
+│   │   │   ├── ai/
+│   │   │   ├── grants/
+│   │   │   ├── matching/
+│   │   │   ├── npo/
+│   │   │   └── saved_grants/
+│   │   ├── services/
+│   │   ├── template/
+│   │   ├── tests/
+│   │   ├── utils/
+│   │   ├── main.py
+│   │   ├── requirements.txt
+│   │   └── pytest.ini
+│   ├── extensions/
+│   ├── firebase.json
+│   ├── firestore.rules
+│   ├── firestore.indexes.json
+│   ├── pyproject.toml
+│   └── sample.env
+├── assets/
 └── README.md
 ```
 
@@ -195,7 +215,7 @@ Granted/
 - Open an issue for new feature requests or bugs.
 - Create small, focused pull requests.
 
-### Connect with Us !
+### Connect with Us
 
 - Anson Ng (Frontend Engineer/Product Manager) - [linkedin](https://www.linkedin.com/in/iiansonng/)
 - Clarence Choo (Frontend Engineer/UIUX Designer) - [linkedin](https://www.linkedin.com/in/clarence-choo/)

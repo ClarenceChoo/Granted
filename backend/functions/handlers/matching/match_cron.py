@@ -17,7 +17,7 @@ logger.setLevel(logging.INFO)
 
 
 @scheduler_fn.on_schedule(
-    schedule="15 6 * * *",  # Run at 6:15 AM every day - 15 minutes after sync_grants_daily
+    schedule="15 */3 * * *",  # Run every 3 hours at :15 minutes - 15 minutes after sync_grants
     timezone=scheduler_fn.Timezone("Asia/Singapore"),  # Singapore timezone
     memory=512,  # MB - AI inference may need more memory
     timeout_sec=540,  # 9 minutes - batch processing may take time
@@ -25,16 +25,16 @@ logger.setLevel(logging.INFO)
 )
 def match_grants_daily(event: scheduler_fn.ScheduledEvent) -> None:
     """
-    Scheduled function to match all NPOs to grants daily.
+    Scheduled function to match all NPOs to grants every 3 hours.
     
-    Runs at 6:15 AM Singapore time every day (15 minutes after grant sync).
+    Runs every 3 hours at :15 minutes Singapore time (15 minutes after grant sync).
     Updates all matches in the 'matches' collection.
     
     Args:
         event: Scheduler event containing execution metadata
     """
     logger.info(
-        "[CRON Trigger] Daily grant matching started",
+        "[CRON Trigger] Scheduled grant matching started",
         extra={
             "scheduled_time": str(event.schedule_time),
             "job_name": event.job_name if hasattr(event, 'job_name') else "match_grants_daily"
@@ -54,7 +54,7 @@ def match_grants_daily(event: scheduler_fn.ScheduledEvent) -> None:
         )
         
         logger.info(
-            "[CRON Trigger] Daily grant matching completed",
+            "[CRON Trigger] Scheduled grant matching completed",
             extra={
                 "success": result["success"],
                 "processed": result["processed"],
@@ -78,7 +78,7 @@ def match_grants_daily(event: scheduler_fn.ScheduledEvent) -> None:
         
     except Exception as e:
         logger.error(
-            "[CRON Trigger] Unexpected error during daily matching",
+            "[CRON Trigger] Unexpected error during scheduled matching",
             extra={"error": str(e)},
             exc_info=True
         )
