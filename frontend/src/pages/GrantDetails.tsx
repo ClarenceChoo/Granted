@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useLocation } from 'react-router-dom'
-import { ArrowLeft, Calendar, ExternalLink, Hash, CheckCircle, AlertCircle, X } from 'lucide-react'
+import { ArrowLeft, Calendar, ExternalLink, Hash, CheckCircle, AlertCircle } from 'lucide-react'
 import { GRANTS_DATA } from '../data'
 import { fetchGrants } from '../services/grantsService'
 import type { Grant } from '../types'
@@ -11,7 +11,6 @@ export default function GrantDetails() {
     const matchState = (location.state as any) || null
     const [grant, setGrant] = useState<Grant | null>(null)
     const [isLoading, setIsLoading] = useState(true)
-    const [showSuccess, setShowSuccess] = useState(false)
 
     useEffect(() => {
         const loadGrant = async () => {
@@ -27,8 +26,9 @@ export default function GrantDetails() {
     }, [id])
 
     const handleApply = () => {
-        setShowSuccess(true)
-        setTimeout(() => setShowSuccess(false), 3000)
+        const url = grant?.deactivationUrl?.trim()
+        if (!url) return
+        window.open(url, '_blank', 'noopener,noreferrer')
     }
 
     if (isLoading) {
@@ -103,8 +103,8 @@ export default function GrantDetails() {
                                 onClick={handleApply}
                                 className="w-full md:w-auto bg-indigo-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2"
                             >
-                                {showSuccess ? 'Applied!' : 'Apply Now'}
-                                {showSuccess ? <CheckCircle className="w-4 h-4" /> : <ExternalLink className="w-4 h-4" />}
+                                Apply Now
+                                <ExternalLink className="w-4 h-4" />
                             </button>
                         </div>
                     </div>
@@ -198,23 +198,6 @@ export default function GrantDetails() {
 
             </div>
 
-            {/* Success Toast */}
-            {showSuccess && (
-                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-slide-up">
-                    <div className="bg-slate-900 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3">
-                        <div className="bg-emerald-500 rounded-full p-1">
-                            <CheckCircle className="w-4 h-4 text-white" />
-                        </div>
-                        <div>
-                            <h4 className="font-semibold text-sm">Application Submitted</h4>
-                            <p className="text-slate-400 text-xs">The agency will be in touch shortly.</p>
-                        </div>
-                        <button onClick={() => setShowSuccess(false)} className="ml-2 p-1 hover:bg-white/10 rounded-full transition">
-                            <X className="w-4 h-4 text-slate-400" />
-                        </button>
-                    </div>
-                </div>
-            )}
         </div>
     )
 }
