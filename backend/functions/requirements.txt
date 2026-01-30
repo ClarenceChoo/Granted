@@ -419,7 +419,8 @@ google-cloud-core==2.5.0 \
     # via
     #   google-cloud-firestore
     #   google-cloud-storage
-google-cloud-firestore==2.23.0 \
+google-cloud-firestore==2.23.0
+google-generativeai==0.8.3 \
     --hash=sha256:19f2326cb466b0d52aed9fabbd89758be431f6ce18c422966cfdb8326b424314 \
     --hash=sha256:a9cffba7cdc6101111d6d54cde22d521c98f9e7d415e67486b137fa16f06aa03
     # via
