@@ -1,4 +1,4 @@
-import { Bell, LogOut } from 'lucide-react'
+import { LogOut } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
 // Firebase removed: rely on backend tokens stored locally
@@ -66,10 +66,6 @@ export default function Navbar({
                         )}
                     </div>
                     <div className="flex items-center gap-3">
-                        <button className="p-2 text-slate-500 hover:text-[#0F172A] hover:bg-slate-100 rounded-full transition-all">
-                            <Bell className="w-5 h-5" />
-                        </button>
-
                         {isAuthenticated ? (
                             <div className="relative" ref={ref}>
                                 <button onClick={() => setOpen(o => !o)} title="Profile" className="bg-[#0F766E] text-white w-10 h-10 rounded-full flex items-center justify-center font-semibold">
