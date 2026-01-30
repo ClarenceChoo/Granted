@@ -1,16 +1,31 @@
 """
-HTTP function for AI-powered mission statement refinement using Gemini.
+HTTP function for AI-powered mission statement refinement using OpenAI.
 """
 
 import json
 import logging
+import os
+import traceback
+from pathlib import Path
 from firebase_functions import https_fn
-import google.generativeai as genai
+from openai import OpenAI
+from pydantic import BaseModel
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+# Load prompts from JSON file
+PROMPTS_FILE = Path(__file__).parent / "prompts.json"
+with open(PROMPTS_FILE, "r") as f:
+    PROMPTS = json.load(f)
+
+
+# Pydantic model for structured output
+class MissionRefineOutput(BaseModel):
+    refined_mission: str
+    strategy_blurb: str
 
 
 def get_cors_headers():
@@ -18,14 +33,14 @@ def get_cors_headers():
     return {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Access-Control-Allow-Headers": "Content-Type",
     }
 
 
-@https_fn.on_request(secrets=["GEMINI_API_KEY"])
+@https_fn.on_request(secrets=["OPENAI_API_KEY"])
 def chat_refine(req: https_fn.Request) -> https_fn.Response:
     """
-    Uses Gemini to refine the mission statement and generate grant strategy suggestions.
+    Uses OpenAI to refine the mission statement and generate grant strategy suggestions.
     
     POST body:
     {
@@ -63,6 +78,7 @@ def chat_refine(req: https_fn.Request) -> https_fn.Response:
     try:
         # Parse request body
         request_data = req.get_json(silent=True)
+        logger.info(f"Received refine request with method: {req.method}")
         if not request_data:
             return https_fn.Response(
                 response=json.dumps({"error": "Request body is required"}),
@@ -74,6 +90,8 @@ def chat_refine(req: https_fn.Request) -> https_fn.Response:
         mission = request_data.get("mission", "")
         sector = request_data.get("sector", "")
         
+        logger.info(f"Mission length: {len(mission)}, Sector: {sector}")
+        
         if not mission:
             return https_fn.Response(
                 response=json.dumps({"error": "Mission statement is required"}),
@@ -83,17 +101,18 @@ def chat_refine(req: https_fn.Request) -> https_fn.Response:
             )
         
         # Get API key from secret
-        import os
-        api_key = os.environ.get("GEMINI_API_KEY")
+        api_key = os.environ.get("OPENAI_API_KEY")
+        if api_key:
+            api_key = api_key.strip()  # Remove any trailing whitespace/newlines
         
         if not api_key:
-            logger.warning("GEMINI_API_KEY not configured")
+            logger.warning("OPENAI_API_KEY not configured")
             return https_fn.Response(
                 response=json.dumps({
                     "refinedMission": f"{mission} (AI Enhancement Unavailable - No Key)",
                     "suggestions": {
                         "headline": "AI Suggestion Unavailable",
-                        "blurb": "Please configure GEMINI_API_KEY to see real AI suggestions.",
+                        "blurb": "Please configure OPENAI_API_KEY to see real AI suggestions.",
                         "suggestedMission": mission
                     }
                 }),
@@ -102,39 +121,35 @@ def chat_refine(req: https_fn.Request) -> https_fn.Response:
                 mimetype="application/json"
             )
         
-        # Configure Gemini
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-2.0-flash-lite')
+        # Configure OpenAI client
+        client = OpenAI(api_key=api_key)
         
-        prompt = f"""
-        Act as a professional grant writer for a Singapore non-profit in the '{sector}' sector.
+        # Load and format prompt template
+        prompt_template = PROMPTS["chat_refine"]["template"]
+        prompt = prompt_template.format(sector=sector, mission=mission)
         
-        The user has provided this rough mission statement: "{mission}"
+        logger.info(f"Calling OpenAI with prompt length: {len(prompt)}")
+        completion = client.beta.chat.completions.parse(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": f"You are a {PROMPTS['chat_refine']['system_role']}."},
+                {"role": "user", "content": prompt}
+            ],
+            response_format=MissionRefineOutput,
+            temperature=0.7,
+            max_tokens=500
+        )
         
-        Task 1: Rewrite this mission statement to be more professional, impactful, and grant-ready. Keep it under 50 words.
-        
-        Task 2: Suggest a personalized "Grant Opportunity Strategy" blurb (2-3 sentences) explaining what kind of grants they should target.
-        
-        Return the output purely as a JSON object with this structure:
-        {{
-            "refined_mission": "...",
-            "strategy_blurb": "..."
-        }}
-        Do not include markdown formatting like ```json. Just the raw JSON string.
-        """
-        
-        response = model.generate_content(prompt)
-        
-        # Clean up response
-        cleaned_text = response.text.replace("```json", "").replace("```", "").strip()
-        data = json.loads(cleaned_text)
+        # Extract structured response
+        data = completion.choices[0].message.parsed
+        logger.info(f"Received structured response: refined_mission length={len(data.refined_mission)}")
         
         result = {
-            "refinedMission": data.get("refined_mission", mission),
+            "refinedMission": data.refined_mission,
             "suggestions": {
                 "headline": f"AI Strategy for {sector}",
-                "blurb": data.get("strategy_blurb", "Focus on community impact and sustainable growth."),
-                "suggestedMission": data.get("refined_mission", mission)
+                "blurb": data.strategy_blurb,
+                "suggestedMission": data.refined_mission
             }
         }
         
@@ -147,31 +162,17 @@ def chat_refine(req: https_fn.Request) -> https_fn.Response:
             mimetype="application/json"
         )
         
-    except json.JSONDecodeError as e:
-        logger.error(f"Failed to parse Gemini response: {e}")
-        return https_fn.Response(
-            response=json.dumps({
-                "refinedMission": mission,
-                "suggestions": {
-                    "headline": "AI Service Temporarily Unavailable",
-                    "blurb": "We couldn't generate a custom strategy right now, but your mission has been saved.",
-                    "suggestedMission": mission
-                }
-            }),
-            status=200,
-            headers=get_cors_headers(),
-            mimetype="application/json"
-        )
-        
     except Exception as e:
         logger.error(f"Error in chat_refine: {e}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        fallback_mission = request_data.get("mission", "") if 'request_data' in locals() else ""
         return https_fn.Response(
             response=json.dumps({
-                "refinedMission": request_data.get("mission", ""),
+                "refinedMission": fallback_mission,
                 "suggestions": {
                     "headline": "AI Service Temporarily Unavailable",
                     "blurb": "We couldn't generate a custom strategy right now, but your mission has been saved.",
-                    "suggestedMission": request_data.get("mission", "")
+                    "suggestedMission": fallback_mission
                 }
             }),
             status=200,

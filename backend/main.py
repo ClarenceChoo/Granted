@@ -84,7 +84,7 @@ async def send_grant_email(request: SendGrantEmailRequest):
                 ])
                 sectors_html = f'''<div style="margin-top:12px;"><div style="font-size:12px; color:#9ca3af; font-weight:600; text-transform:uppercase; margin-bottom:8px;">Applicable Sectors</div><div>{sector_badges}</div></div>'''
 
-            details_row = f""
+            details_row = ""
             if grant.quantum or grant.deadline:
                 details_row = f'''<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:collapse; margin-top:8px;"><tr><td style="font-size:12px; color:#9ca3af; font-weight:600; text-transform:uppercase; padding-bottom:6px;">{('Grant Amount' if grant.quantum else '')}</td><td style="font-size:12px; color:#9ca3af; font-weight:600; text-transform:uppercase; padding-bottom:6px; text-align:right;">{('Deadline' if grant.deadline else '')}</td></tr><tr><td style="font-size:15px; color:#059669; font-weight:700;">{grant.quantum or ''}</td><td style="font-size:15px; color:#dc2626; font-weight:700; text-align:right;">{grant.deadline or ''}</td></tr></table>'''
 
