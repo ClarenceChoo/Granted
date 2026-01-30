@@ -21,7 +21,7 @@ def get_cors_headers():
 @https_fn.on_request()
 def send_hello_world_email(req: https_fn.Request) -> https_fn.Response:
     """
-    HTTP POST endpoint to send a Hello World email to clarencechoo1111@gmail.com.
+    HTTP POST endpoint to send a Hello World test email.
     
     The Firestore Send Email extension watches the 'mail' collection
     and sends emails based on the document structure.
@@ -48,13 +48,34 @@ def send_hello_world_email(req: https_fn.Request) -> https_fn.Response:
         db = firestore.client()
         mail_ref = db.collection("mail").document()
         
+        # Read the image file as base64 for attachment
+        import base64
+        with open("template/moo.jpeg", "rb") as img_file:
+            img_data = base64.b64encode(img_file.read()).decode('utf-8')
+        
         mail_ref.set({
-            "to": ["yuhoetan@gmail.com"],
+            "to": ["yuhoetan@gmail.com", "robyn.p03@gmail.com", "clarencechoo1111@gmail.com"],
             "message": {
-                "subject": "wassup gays, the email service is up and running",
-                "text": "i love hong xun ass",
-                "html": open("static/template.html", "r").read()
-                # "html": "<h1>Hello World!</h1><p>hello world, i fucking spent 6 hours building the email serivce to make this thing work. below ive attached of my gay aass face</p><img src=\"https://i.imgur.com/KawrXNF.jpeg\">",
+                "subject": "Hello World - Email Service Test",
+                "text": "Hello World! This is a test email from the Granted backend email service.",
+                "html": """
+                    <h1>Hello World!</h1>
+                    <p>This is a test email from the Granted backend email service.</p>
+                    <div style="margin-top: 20px;">
+                        <img src="cid:moo" alt="Moo" style="max-width: 500px; border-radius: 8px;">
+                        <p style="font-style: italic; color: #666; margin-top: 10px;">
+                            When you successfully deploy your email service after 6 hours of debugging 🐄
+                        </p>
+                    </div>
+                """,
+                "attachments": [
+                    {
+                        "filename": "moo.jpeg",
+                        "content": img_data,
+                        "encoding": "base64",
+                        "cid": "moo"
+                    }
+                ]
             }
         })
         
