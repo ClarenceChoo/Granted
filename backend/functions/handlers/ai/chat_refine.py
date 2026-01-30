@@ -1,11 +1,18 @@
 """
-HTTP function for AI-powered mission statement refinement using Gemini.
+HTTP function for AI-powered mission statement refinement.
+Migrated from Gemini to OpenAI.
 """
 
 import json
 import logging
+import os
 from firebase_functions import https_fn
-import google.generativeai as genai
+
+# OpenAI import
+from openai import OpenAI
+
+# Gemini import (commented out)
+# import google.generativeai as genai
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -22,10 +29,11 @@ def get_cors_headers():
     }
 
 
-@https_fn.on_request(secrets=["GEMINI_API_KEY"])
+# Changed from secrets=["GEMINI_API_KEY"] to secrets=["OPENAI_API_KEY"]
+@https_fn.on_request(secrets=["OPENAI_API_KEY"])
 def chat_refine(req: https_fn.Request) -> https_fn.Response:
     """
-    Uses Gemini to refine the mission statement and generate grant strategy suggestions.
+    Uses OpenAI to refine the mission statement and generate grant strategy suggestions.
     
     POST body:
     {
@@ -82,18 +90,17 @@ def chat_refine(req: https_fn.Request) -> https_fn.Response:
                 mimetype="application/json"
             )
         
-        # Get API key from secret
-        import os
-        api_key = os.environ.get("GEMINI_API_KEY")
+        # Get API key from secret (changed from GEMINI_API_KEY to OPENAI_API_KEY)
+        api_key = os.environ.get("OPENAI_API_KEY")
         
         if not api_key:
-            logger.warning("GEMINI_API_KEY not configured")
+            logger.warning("OPENAI_API_KEY not configured")
             return https_fn.Response(
                 response=json.dumps({
                     "refinedMission": f"{mission} (AI Enhancement Unavailable - No Key)",
                     "suggestions": {
                         "headline": "AI Suggestion Unavailable",
-                        "blurb": "Please configure GEMINI_API_KEY to see real AI suggestions.",
+                        "blurb": "Please configure OPENAI_API_KEY to see real AI suggestions.",
                         "suggestedMission": mission
                     }
                 }),
@@ -102,31 +109,48 @@ def chat_refine(req: https_fn.Request) -> https_fn.Response:
                 mimetype="application/json"
             )
         
-        # Configure Gemini
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-2.0-flash-lite')
+        # ============================================
+        # OpenAI Implementation
+        # ============================================
+        client = OpenAI(api_key=api_key)
         
-        prompt = f"""
-        Act as a professional grant writer for a Singapore non-profit in the '{sector}' sector.
+        prompt = f"""Act as a professional grant writer for a Singapore non-profit in the '{sector}' sector.
+
+The user has provided this rough mission statement: "{mission}"
+
+Task 1: Rewrite this mission statement to be more professional, impactful, and grant-ready. Keep it under 50 words.
+
+Task 2: Suggest a personalized "Grant Opportunity Strategy" blurb (2-3 sentences) explaining what kind of grants they should target.
+
+Return the output purely as a JSON object with this structure:
+{{
+    "refined_mission": "...",
+    "strategy_blurb": "..."
+}}
+Do not include markdown formatting like ```json. Just the raw JSON string."""
         
-        The user has provided this rough mission statement: "{mission}"
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a helpful grant writing assistant. Always respond with valid JSON only."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7,
+            max_tokens=500
+        )
         
-        Task 1: Rewrite this mission statement to be more professional, impactful, and grant-ready. Keep it under 50 words.
+        response_text = response.choices[0].message.content
         
-        Task 2: Suggest a personalized "Grant Opportunity Strategy" blurb (2-3 sentences) explaining what kind of grants they should target.
-        
-        Return the output purely as a JSON object with this structure:
-        {{
-            "refined_mission": "...",
-            "strategy_blurb": "..."
-        }}
-        Do not include markdown formatting like ```json. Just the raw JSON string.
-        """
-        
-        response = model.generate_content(prompt)
+        # ============================================
+        # Gemini Implementation (commented out)
+        # ============================================
+        # genai.configure(api_key=api_key)
+        # model = genai.GenerativeModel('gemini-2.0-flash-lite')
+        # response = model.generate_content(prompt)
+        # response_text = response.text
         
         # Clean up response
-        cleaned_text = response.text.replace("```json", "").replace("```", "").strip()
+        cleaned_text = response_text.replace("```json", "").replace("```", "").strip()
         data = json.loads(cleaned_text)
         
         result = {
@@ -148,7 +172,7 @@ def chat_refine(req: https_fn.Request) -> https_fn.Response:
         )
         
     except json.JSONDecodeError as e:
-        logger.error(f"Failed to parse Gemini response: {e}")
+        logger.error(f"Failed to parse AI response: {e}")
         return https_fn.Response(
             response=json.dumps({
                 "refinedMission": mission,

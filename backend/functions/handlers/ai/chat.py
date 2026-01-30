@@ -1,11 +1,18 @@
 """
-HTTP function for free-form AI chat about grants using Gemini.
+HTTP function for free-form AI chat about grants.
+Migrated from Gemini to OpenAI.
 """
 
 import json
 import logging
+import os
 from firebase_functions import https_fn
-import google.generativeai as genai
+
+# OpenAI import
+from openai import OpenAI
+
+# Gemini import (commented out)
+# import google.generativeai as genai
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -22,10 +29,11 @@ def get_cors_headers():
     }
 
 
-@https_fn.on_request(secrets=["GEMINI_API_KEY"])
+# Changed from secrets=["GEMINI_API_KEY"] to secrets=["OPENAI_API_KEY"]
+@https_fn.on_request(secrets=["OPENAI_API_KEY"])
 def ai_chat(req: https_fn.Request) -> https_fn.Response:
     """
-    Free-form AI chat endpoint for grant-related questions.
+    Free-form AI chat endpoint for grant-related questions using OpenAI.
     
     POST body:
     {
@@ -88,15 +96,14 @@ def ai_chat(req: https_fn.Request) -> https_fn.Response:
                 mimetype="application/json"
             )
         
-        # Get API key from secret
-        import os
-        api_key = os.environ.get("GEMINI_API_KEY")
+        # Get API key from secret (changed from GEMINI_API_KEY to OPENAI_API_KEY)
+        api_key = os.environ.get("OPENAI_API_KEY")
         
         if not api_key:
-            logger.warning("GEMINI_API_KEY not configured")
+            logger.warning("OPENAI_API_KEY not configured")
             return https_fn.Response(
                 response=json.dumps({
-                    "response": "AI chat is not available. Please configure GEMINI_API_KEY.",
+                    "response": "AI chat is not available. Please configure OPENAI_API_KEY.",
                     "success": False
                 }),
                 status=200,
@@ -104,26 +111,16 @@ def ai_chat(req: https_fn.Request) -> https_fn.Response:
                 mimetype="application/json"
             )
         
-        # Configure Gemini
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-2.0-flash-lite')
-        
         # Build context from organization profile
         org_context = ""
         if context:
             org_context = f"""
-            The user is from an organization with the following profile:
-            - Name: {context.get('name', 'Unknown')}
-            - Sector: {context.get('sector', 'Unknown')}
-            - Mission: {context.get('mission', 'Not specified')}
-            - UEN: {context.get('uen', 'Not specified')}
-            """
-        
-        # Build conversation history (keep last 10 messages)
-        history_text = ""
-        for msg in history[-10:]:
-            role = "User" if msg.get("role") == "user" else "Assistant"
-            history_text += f"{role}: {msg.get('content', '')}\n"
+The user is from an organization with the following profile:
+- Name: {context.get('name', 'Unknown')}
+- Sector: {context.get('sector', 'Unknown')}
+- Mission: {context.get('mission', 'Not specified')}
+- UEN: {context.get('uen', 'Not specified')}
+"""
         
         system_prompt = f"""You are a helpful AI assistant specializing in Singapore grants and funding for non-profit organizations (NPOs), charities, and social enterprises.
 
@@ -142,22 +139,62 @@ Guidelines:
 - Provide actionable advice when possible
 - Keep responses under 200 words unless more detail is needed
 - Use bullet points for lists
-- Be encouraging and supportive
+- Be encouraging and supportive"""
 
-Previous conversation:
-{history_text}
-
-User's current message: {message}
-
-Respond helpfully:"""
-
-        response = model.generate_content(system_prompt)
+        # ============================================
+        # OpenAI Implementation
+        # ============================================
+        client = OpenAI(api_key=api_key)
+        
+        # Build messages array for OpenAI
+        messages = [{"role": "system", "content": system_prompt}]
+        
+        # Add conversation history (last 10 messages)
+        for msg in history[-10:]:
+            role = "user" if msg.get("role") == "user" else "assistant"
+            messages.append({"role": role, "content": msg.get("content", "")})
+        
+        # Add current user message
+        messages.append({"role": "user", "content": message})
+        
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=messages,
+            temperature=0.7,
+            max_tokens=800
+        )
+        
+        response_text = response.choices[0].message.content
+        
+        # ============================================
+        # Gemini Implementation (commented out)
+        # ============================================
+        # genai.configure(api_key=api_key)
+        # model = genai.GenerativeModel('gemini-2.0-flash-lite')
+        # 
+        # # Build conversation history for Gemini
+        # history_text = ""
+        # for msg in history[-10:]:
+        #     role = "User" if msg.get("role") == "user" else "Assistant"
+        #     history_text += f"{role}: {msg.get('content', '')}\n"
+        # 
+        # full_prompt = f"""{system_prompt}
+        # 
+        # Previous conversation:
+        # {history_text}
+        # 
+        # User's current message: {message}
+        # 
+        # Respond helpfully:"""
+        # 
+        # response = model.generate_content(full_prompt)
+        # response_text = response.text
         
         logger.info("Successfully generated AI chat response")
         
         return https_fn.Response(
             response=json.dumps({
-                "response": response.text,
+                "response": response_text,
                 "success": True
             }),
             status=200,
