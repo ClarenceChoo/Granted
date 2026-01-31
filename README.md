@@ -1,4 +1,10 @@
-# Granted — Hackathon Project & Developer Guide
+# Granted
+
+## Hack4Good 2026 - 2nd Place Winner
+
+Granted won **2nd place** at Hack4Good 2026! Granted is an automated
+grant discovery engine built to help NPOs find and act on funding
+opportunities.
 
 ![Landing image](assets/landing-page-v2.png)
 
