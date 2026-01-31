@@ -95,6 +95,15 @@ export default function Navbar({
                     </div>
                 </div>
             </div>
+            <div className="md:hidden border-t border-slate-100">
+                <div className="px-4 py-2 flex gap-6 text-sm font-medium text-slate-600 overflow-x-auto whitespace-nowrap">
+                    <Link to="/discover" className="hover:text-[#0F172A] transition-colors">Discover</Link>
+                    <Link to="/my-grants" className="hover:text-[#0F172A] transition-colors">My Grants</Link>
+                    {isAuthenticated && (
+                        <Link to="/admin" className="hover:text-[#0F172A] transition-colors">Admin</Link>
+                    )}
+                </div>
+            </div>
             {showSignOut && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center">
                     <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setShowSignOut(false)} />
