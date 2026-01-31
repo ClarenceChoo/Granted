@@ -6,7 +6,6 @@ Runs daily at 6am SGT.
 import json
 import logging
 import requests
-from zoneinfo import ZoneInfo
 from firebase_functions import scheduler_fn, https_fn
 from firebase_admin import firestore
 
@@ -110,7 +109,10 @@ def _sync_grants_logic() -> dict:
     return summary
 
 
-@scheduler_fn.on_schedule(schedule="0 */3 * * *", timezone=ZoneInfo("Asia/Singapore"))
+@scheduler_fn.on_schedule(
+    schedule="0 */3 * * *",
+    timezone=scheduler_fn.Timezone("Asia/Singapore")
+)
 def sync_grants_daily(event: scheduler_fn.ScheduledEvent) -> None:
     """
     Scheduled function that runs every 3 hours to sync grant data.

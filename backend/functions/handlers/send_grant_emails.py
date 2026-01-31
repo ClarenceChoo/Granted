@@ -270,7 +270,10 @@ def send_emails_to_all_npos(db) -> Dict[str, Any]:
 
 
 # CRON Trigger: Weekly on Monday 9am SGT
-@scheduler_fn.on_schedule(schedule="0 9 * * 1", timezone="Asia/Singapore")
+@scheduler_fn.on_schedule(
+    schedule="0 9 * * 1",
+    timezone=scheduler_fn.Timezone("Asia/Singapore")
+)
 def send_weekly_grant_emails(event: scheduler_fn.ScheduledEvent) -> None:
     """
     Scheduled function to send weekly grant match emails.
