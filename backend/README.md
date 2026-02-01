@@ -11,9 +11,9 @@ AI-powered grant matching platform for non-profit organisations (NPOs) in Singap
 └────────┬────────┘
          │ HTTPS
          ▼
-┌─────────────────────────────────────────────────────────┐
-│          Firebase Cloud Functions (Python)              │
-│                                                         │
+┌───────────────────────────────────────────────────────┐
+│          Firebase Cloud Functions (Python)            │
+│                                                       │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐ │
 │  │   NPO API    │  │  Grant API   │  │  AI Matching │ │
 │  │              │  │              │  │   Service    │ │
@@ -22,30 +22,30 @@ AI-powered grant matching platform for non-profit organisations (NPOs) in Singap
 │  │ • Get        │  │ • Unsave     │  │ • CRON       │ │
 │  │ • Login      │  │ • Get Saved  │  │ • Firestore  │ │
 │  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘ │
-│         │                  │                  │         │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐ │
-│  │  Get Matches │  │ Email Notify │  │   AI Chat    │ │
-│  │              │  │              │  │   Features   │ │
+│         │                 │                 │         │
+│  ┌──────▼───────┐  ┌──────▼───────┐  ┌──────▼───────┐ │
+│  │ Get Matches  │  │Email Notify  │  │  AI Chat     │ │
+│  │              │  │              │  │  Features    │ │
 │  │ • Auth       │  │ • Weekly     │  │              │ │
 │  │ • Get NPO    │  │ • Manual     │  │ • Chat       │ │
 │  │   Matches    │  │ • Jinja2     │  │ • Refine     │ │
 │  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘ │
-│         │                  │                  │         │
-└─────────┼──────────────────┼──────────────────┼─────────┘
-          │                  │                  │
-          ▼                  ▼                  ▼
+│         │                 │                 │         │
+└─────────┼─────────────────┼─────────────────┼─────────┘
+          │                 │                 │
+          ▼                 ▼                 ▼
 ┌─────────────────────────────────────────────────────────┐
 │              Firebase Services & External APIs          │
 │                                                         │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐ │
-│  │  Firestore   │  │  Firebase    │  │   Secret     │ │
-│  │  Database    │  │    Auth      │  │   Manager    │ │
-│  │              │  │              │  │              │ │
-│  │ • npos       │  │ • Email/Pass │  │ • API Keys   │ │
-│  │ • grants     │  │ • JWT Tokens │  │ • Secrets    │ │
-│  │ • matches    │  │              │  │              │ │
-│  │ • mail       │  │              │  │              │ │
-│  └──────────────┘  └──────────────┘  └──────────────┘ │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐   │
+│  │  Firestore   │  │  Firebase    │  │   Secret     │   │
+│  │  Database    │  │    Auth      │  │   Manager    │   │
+│  │              │  │              │  │              │   │
+│  │ • npos       │  │ • Email/Pass │  │ • API Keys   │   │
+│  │ • grants     │  │ • JWT Tokens │  │ • Secrets    │   │
+│  │ • matches    │  │              │  │              │   │
+│  │ • mail       │  │              │  │              │   │
+│  └──────────────┘  └──────────────┘  └──────────────┘   │
 └─────────────────────────────────────────────────────────┘
                           │
                           ▼
